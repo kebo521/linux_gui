@@ -9,276 +9,23 @@
 #include "xui_fb.h"
 #include "xui_show.h"
 #include "xui_font.h"
+#include "xui_ui.h"
 #include "xui_gui.h"
 #include "EvenMsg.h"
 #include "QR_Encode.h"
+#include "key_hard.h"
 
 
 
 //=========================按键定义==========================
 //static const char* KeyMsgABC[10]={"*#:/?%@-+=","&$!,;'`^~\"_|","ABC","DEF","GHI","JKL","MNO","PQRS","TUV","WXYZ"};
 
-XuiWindow UI_screen = {0};
-//#include <unistd.h> 
-void GetCurrentTime(u32 *cutimeMs)
-{    
-	struct timeval tv;     
-	gettimeofday(&tv, NULL);
-	*cutimeMs =(tv.tv_sec*1000 + tv.tv_usec/1000);
-}
 
-//========从src1中查找src2字段=返回匹配src1中的末端地址=======
-char *API_eStrstr(char* src1, const char* src2)
-{
-	unsigned char *pS1,*pS2;
-	//if(src1==NULL || src2==NULL) return NULL;
-	pS1=(unsigned char*)src1;
-	pS2=(unsigned char*)src2;
-	while(*pS1)
-	{
-		if(*pS1 != *pS2)
-		{
-			if(pS2 != (unsigned char*)src2)
-			{
-				pS2=(unsigned char*)src2;
-				pS1=(unsigned char*)src1;
-			}
-			else pS1++;
-		}
-		else
-		{
-			pS1++; 
-			if(pS2 == (unsigned char*)src2) //记录串1起点(src1+1)
-				src1=(char*)pS1;
-			pS2++;
-			if(*pS2 == '\0')
-				return (char*)pS1;
-		}
-	}
-	return NULL;
-}
-
-//------------------显示金额 转 交易金额-------------------------------
-void Conv_DmoneyToTmoney(char* pOutStr,char* pInsMoney)
-{
-	u8 i,j,k;
-	u8 Inlen=API_strlen(pInsMoney);
-	for(i=0;i<Inlen;i++)
-		if(pInsMoney[i]=='.') break;
-	//----整数部分------
-	for(j=0;j<i;j++)
-		pOutStr[j]=pInsMoney[j];
-	//---小数部分精确两位----
-	if(i<Inlen)	//有小数点
-	{
-		for(i=0; i<2; i++)
-		{
-			if((j+1) < Inlen)
-				pOutStr[j]=pInsMoney[j+1];
-			else
-				pOutStr[j]='0';
-			j++;
-		}
-	}
-	else	//无小数点,两位0
-	{
-		pOutStr[j++]='0';
-		pOutStr[j++]='0';
-	}
-	//---过滤无效位------
-	for(i=0; i<j; i++)
-		if(pOutStr[i]!='0')
-			break;
-	if(i)
-	{
-		k=j-i;
-		for(j=0;j<k;j++)
-			pOutStr[j]=pOutStr[j+i];
-	}
-	pOutStr[j]='\0';
-}
-
-//------------------交易金额 转 显示金额-------------------------------
-void Conv_TmoneyToDmoney(char* pOutdMoney,char* pIntMoney)
-{
-	u16 i=0,Inlen=API_strlen(pIntMoney);
-	if(Inlen == 0)
-	{
-		pOutdMoney[0]='\0';
-		return;
-	}
-	if(Inlen <= 2)
-	{
-		pOutdMoney[i++]='0';
-		pOutdMoney[i++]='.';
-		if(Inlen < 2)
-			pOutdMoney[i++]='0';
-		else
-			pOutdMoney[i++]=*pIntMoney++;
-		pOutdMoney[i++]=*pIntMoney++;
-	}
-	else
-	{
-		Inlen -= 2;
-		while(i<Inlen)
-		{
-			pOutdMoney[i++]=*pIntMoney++;
-		}
-		pOutdMoney[i++]='.';
-		pOutdMoney[i++]=*pIntMoney++;
-		pOutdMoney[i++]=*pIntMoney++;
-	}
-
-	while(i--)	//去掉无效参数
-	{
-		if(pOutdMoney[i] == '.')
-		{
-			i--;
-			break;
-		}
-		else if(pOutdMoney[i] != '0') 
-			break;
-	}
-	pOutdMoney[++i]='\0';
-}
-
-
-
-//argv 支持的格式为
-//FB=xxxxx /*framebuffer 设备节点（默认值"/dev/graphics/fb0"）*/
-//INPUT=xxxx /*input 设备节点，可以多个（默认值/dev/keypad 和/dev/tp）。只有在应用不设置该参数时，按照默认值加载输入设备，当应用设置了该参数时，则只加载所设置的设备节点，比如如果仅设置这个参数为INPUT=/dev/tp，那么XUI 初始化时则只加载默认触摸屏输入，而不加载物理键盘，这就等于是屏蔽了物理按键输入*/
-//ROTATE=xxx /*屏幕旋转(取值可为0，90，180，默认值0，设置不支持的值时均使用默认值）*/
-//TSDEV=xxxx/*触摸屏设备节点，（默认值/dev/input/event2）*/
-//STATUSBAR=xxx /*状态栏高度（0-64，默认值0，设置不支持的值时均使用默认值）*/
-//示例：char *xui_argv[] = {"ROTATE=90","STATUSBAR=18"};
-//XuiOpen(sizeof(xui_argv)/sizeof(xui_argv[0]), xui_argv);
-
-int XuiOpen(int argc,char **argv)
-{
-	int i;
-	char *pTag;
-	for(i=0;i<argc;i++)
-	{
-		pTag=API_eStrstr(argv[i],"FB=");
-		if(pTag)
-		{
-			continue;
-		}
-		pTag=API_eStrstr(argv[i],"INPUT=");
-		if(pTag)
-		{
-			continue;
-		}
-		pTag=API_eStrstr(argv[i],"ROTATE=");
-		if(pTag)
-		{
-			//atoi(pTag);
-			continue;
-		}
-		pTag=API_eStrstr(argv[i],"TSDEV=");
-		if(pTag)
-		{
-			continue;
-		}
-		pTag=API_eStrstr(argv[i],"STATUSBAR=");
-		if(pTag)
-		{
-			//atoi(pTag);
-			continue;
-		}
-	}
-	return 0;
-}
-
-//判断XUI 是否正在运行。
-int XuiIsRunning(void)
-{
-
-	return 0;
-}
-
-//关闭XUI
-void XuiClose(void)
-{
-	free(UI_screen.widget);
-	memset(&UI_screen,0x00,sizeof(UI_screen));
-}
-
-//暂停XUI 运行。
-int XuiSuspend(void)
-{
-
-	return 0;
-}
-
-//恢复XUI 运行
-int XuiResume(void)
-{
-
-	return 0;
-}
-
-
-//获取根画布
-int XuiRootCanvas(screen_buffer* fb)
-{
-	XuiWindow *pXui;
-	if(fb->width < SCREEN_WIDTH || fb->height < SCREEN_HEIGT)
-	{
-		TRACE("XuiRootCanvas");
-		return -1;
-	}
-	pXui=(XuiWindow*)malloc(sizeof(XuiWindow));
-	pXui->left=fb->width-SCREEN_WIDTH-10;
-	pXui->top=10;
-	pXui->width=SCREEN_WIDTH;
-	pXui->height=SCREEN_HEIGT;
-	pXui->widget=(unsigned char*)malloc(SCREEN_WIDTH*SCREEN_HEIGT*4);
-	memset(pXui->widget,0x00,SCREEN_WIDTH*SCREEN_HEIGT*4);
-	pXui->fb=fb;
-	if(pXui)
-	{
-		memcpy(&UI_screen,pXui,sizeof(UI_screen));
-	}
-	free(pXui);
-	return 0;
-}
-
-//获取状态栏画布
-XuiWindow *XuiStatusbarCanvas(void)
-{
-	return NULL;
-}
-
-
-void XuiPush(void)
-{
-	xui_fb_rect_push(UI_screen.fb,UI_screen.left,UI_screen.top,UI_screen.width,UI_screen.height,(rgba_t*)UI_screen.widget);
-}
-
-
-/*
-//创建字体
-XuiFont *XuiCreateFont(char *fontfile,int index,XuiFontSet fontset);
-{
-	return NULL;
-}
-
-int XuiCanvasDrawText(XuiWindow *window,unsigned int x,unsigned int y,unsigned int height,XuiFont *font,XuiTextStyle textstyle,XuiColor fg,char *text)
-{
-	return 0;
-}
-
-*/
-
-
-
-
-
+//=============================================================================
 void DisplayLineRGB(POINT *pxy,int w,int h,u32 rtg)
 {
 	u16 i,j,sx,sy;
-	pixel_bgra8888_t *pbgra;
+	u32 *pbgra;
 	sx = pxy->left;
 	sy = pxy->top;
 	w += sx;
@@ -287,16 +34,13 @@ void DisplayLineRGB(POINT *pxy,int w,int h,u32 rtg)
 	if(h > UI_screen.height) h=UI_screen.height;
 	for (j = sy; j < h; j++) 
 	{
-		pbgra=&UI_screen.bgra8888buff[j*UI_screen.width + sx];
+		pbgra=&UI_screen.widget[j*UI_screen.width + sx];
 		for(i=sx; i<w; i++)
 		{
-			*(u32*)pbgra = rtg;
-			pbgra++;
+			*pbgra++ = rtg;
 		}
 	}
 }
-
-
 
 
 int DisplayPaintEnd(void)
@@ -306,21 +50,13 @@ int DisplayPaintEnd(void)
 
 
 
+//=====================区域图片备份======malloc new space================================
+/*
 
-
-
-//static u8 SPF_runLock=FALSE;
-int UI_ShowPictureFile(RECTL *prclTrg,const char *pfilePath)
-{
-	
-	return 0;
-}
-
-//=====================区域图片备份======================================
-DisplayBackup* UI_DisplayBitMapInit(u16 x,u16 y,u16 w,u16 h)
+void* UI_ExtractMapBuff(int x,int y,int w,int h)
 {
 	DisplayBackup 	*pLcdBit;
-	pLcdBit=(DisplayBackup *)malloc(sizeof(DisplayBackup) + w*h*2);
+	pLcdBit=(DisplayBackup *)malloc(sizeof(DisplayBackup) + w*h*4);
 	if(pLcdBit==NULL) return NULL;
 	pLcdBit->Rect.left		= x;
 	pLcdBit->Rect.top		= y;
@@ -330,17 +66,17 @@ DisplayBackup* UI_DisplayBitMapInit(u16 x,u16 y,u16 w,u16 h)
 	return pLcdBit;
 }
 
-int UI_DisplayBitMapRecovery(DisplayBackup* pLcdBit)
+int UI_ReplaceMapBuff(void* pMap)
 {
-	if(pLcdBit==NULL) return -1;
+	//DisplayBackup* pLcdBit
+	if(pMap==NULL) return -1;
 //	return DisplayBitMap(&pLcdBit->Rect,(LPBYTE)pLcdBit->LcdBuff);
 	return 0;
 }
 
-void UI_DisplayBitMapFree(DisplayBackup* pLcdBit)
+void UI_FreeMapBuff(void* pMap)
 {
-	if(pLcdBit==NULL) return;
-	free(pLcdBit);
+	if(pMap) free(pMap);
 }
 //=====================================================================
 static DisplayBackup* pSaveBackup=NULL;
@@ -348,14 +84,14 @@ void UI_DisplayBitMapGet(u16 x,u16 y,u16 w,u16 h)
 {
 	if(pSaveBackup)
 		free(pSaveBackup);
-	pSaveBackup=UI_DisplayBitMapInit(x,y,w,h);
+	pSaveBackup=UI_DisplayGetMap(x,y,w,h);
 }
 
 void UI_DisplayBitMapSet(void)
 {
 	if(pSaveBackup==NULL)
 		return;
-	UI_DisplayBitMapRecovery(pSaveBackup);
+	UI_DisplaySetMap(pSaveBackup);
 }
 
 void UI_DisplayBitMapEND(void)
@@ -366,15 +102,8 @@ void UI_DisplayBitMapEND(void)
 		pSaveBackup=NULL;
 	}
 }
-//=============================================================================
+*/
 
-
-int APP_WaitUiEvent(int tTimeOutMS)
-{
-	//return API_WaitEvent(tTimeOutMS,EVENT_UI,EVENT_NONE);
-	sleep(tTimeOutMS/1000);
-	return 0;
-}
 
 
 //================================画框=======================================================
@@ -393,80 +122,8 @@ void UI_ShowColorRect(RECTL *pRect,u16 Width,u32 Color)
 
 
 
-//=============底部显示进度条==ratio(0~100)===============================
-void UI_ShowBottomProgress(u8 ratio)
-{
-	int Width;
-	POINT fTrg;
-	fTrg.left = SCREEN_APP_X; 
-	fTrg.top = SCREEN_APP_Y+SCREEN_APP_H-16;
-	DisplayLineRGB(&fTrg,SCREEN_APP_W,16,RGB_CURR(199,200,244));
-	if(ratio)
-	{
-		Width=SCREEN_APP_W-6;
-		if(ratio < 100)
-			Width=Width*ratio/100;
-		fTrg.top	+=	3;
-		fTrg.left	+=	3;
-		DisplayLineRGB(&fTrg,Width,10,RGB_CURR(0,255,255));
-	}
-	DisplayPaintEnd();
-}
 
-//=============显示滑轨==ratio(0~100)===============================
-void UI_ShowParMiddleSlide(u8 par,int ratio)
-{
-	u16 Width1,Width2,WidthS,WidthM;
-	char sbuff[4];
-	int ret;
-	POINT fTrg;
-	WidthM = SCREEN_APP_W-8;
-	WidthS = 32;
-	Width1 = (WidthM-WidthS)*ratio/100;
-	Width2 = (WidthM-WidthS)-Width1;
-	fTrg.top = SCREEN_APP_Y+(SCREEN_APP_H-32)/2;
-	fTrg.left = SCREEN_APP_X+4;
-	DisplayLineRGB(&fTrg,WidthM,32,RGB_CURR(255,255,255));
 
-	
-	fTrg.top = SCREEN_APP_Y+(SCREEN_APP_H-16)/2;
-	if(Width1)
-	{
-		fTrg.left = SCREEN_APP_X+4;
-		DisplayLineRGB(&fTrg,Width1,16,RGB_CURR(210,99,25));
-	}
-	if(Width2)
-	{
-		fTrg.left = SCREEN_APP_X+4+Width1+WidthS;
-		DisplayLineRGB(&fTrg,Width2,16,RGB_CURR(56,56,56));
-	}
-	fTrg.left = SCREEN_APP_X+4+Width1;
-	fTrg.top = SCREEN_APP_Y+(SCREEN_APP_H-32)/2;
-	DisplayLineRGB(&fTrg,WidthS,32,RGB_CURR(199,206,218));
-
-	ret=API_sprintf(sbuff,"%d",par);
-	fTrg.left = SCREEN_APP_X+(SCREEN_APP_W-ret*FONT_SIZE/2)/2;
-	fTrg.top = SCREEN_APP_Y+ (SCREEN_APP_H-32)/2  +32;
-	UI_SetFontColor(RGB_CURR(56,56,56),RGB_CURR(255,255,255));
-	UI_DisplayString(&fTrg,(u8*)sbuff);
-	DisplayPaintEnd();
-}
-
-//==================显示英文，不需要字库支持===================================
-void APP_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms)
-{
-	POINT tFontXY;
-	if(Line==0) 
-	{//----clear-----
-		DisplayLineRGB(&tFontXY,SCREEN_APP_W,SCREEN_APP_H,RGB565_BLACK); 
-		Line++;
-	}
-	tFontXY.left=SCREEN_APP_X; 
-	tFontXY.top=SCREEN_APP_Y + FONT_SIZE*Line;
-	//DisplayString(&tFontXY,(LPBYTE)pMsgEn);
-	DisplayPaintEnd();
-	//usleep(timeoutms*1000);
-}
 
 //===============清除显示内容(指定区域)=================================================
 void API_GUI_ClearScreen(RECTL* pRect)
@@ -497,8 +154,8 @@ int   API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCance
 		else
 			tFontXY.left=UI_TITLE_X+(UI_TITLE_W-sWidth)/2;
 		tFontXY.top =UI_TITLE_Y+(UI_TITLE_H-FONT_SIZE)/2;
-		UI_SetFontColor(FONT_TITLE_COLOUR,UI_TITLE_COLOUR);
-		UI_DrawString(&tFontXY,pTitle);
+		ApiFont.SetFontColor(FONT_TITLE_COLOUR,UI_TITLE_COLOUR);
+		ApiFont.DrawLineString(&tFontXY,pTitle);
 	}
 	//-------------------显示菜单项--------------------------------
 	if(tGuiType==0)
@@ -615,8 +272,8 @@ int  API_GUI_Info(const IMAGE* pImg,u32 tTextType,const char* pTextBuf)
 	}
 	if(pTextBuf)
 	{
-		UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
-		UI_DrawRectString(&tCoordinate,pTextBuf);
+		ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+		ApiFont.DrawRectString(&tCoordinate,pTextBuf);
 	}
 	return 0;
 }
@@ -803,9 +460,9 @@ u32 API_UI_EditShow(u16 keyNum)
 				rclTrg.top = tGuiEditMsg.Rect.top;
 				rclTrg.left = tGuiEditMsg.Rect.left+(tGuiEditMsg.indexShow)*FONT_SIZE/2;
 			}
-			UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+			ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
 			//TRACE("API_UI_EditShow top[%d],left[%d],sbuff[%S]\r\n",rclTrg.top,rclTrg.left,sbuff);
-			UI_DisplayString(&rclTrg,sbuff);
+			ApiFont.DisplayFont(&rclTrg,sbuff);
 		}
 		while(tGuiEditMsg.indexShow < tGuiEditMsg.indexEdit)
 		{
@@ -819,13 +476,13 @@ u32 API_UI_EditShow(u16 keyNum)
 				rclTrg.top = tGuiEditMsg.Rect.top;
 				rclTrg.left = tGuiEditMsg.Rect.left+(tGuiEditMsg.indexShow)*FONT_SIZE/2;
 			}
-			UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+			ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
 			if(tGuiEditMsg.MaskCode)
 				sbuff[0]=tGuiEditMsg.MaskCode;
 			else
 				sbuff[0]=tGuiEditMsg.sEditBuff[tGuiEditMsg.indexShow];
 			//TRACE("API_UI_EditShow top[%d],left[%d],sbuff[%S]\r\n",rclTrg.top,rclTrg.left,sbuff);
-			UI_DisplayString(&rclTrg,sbuff);
+			ApiFont.DisplayFont(&rclTrg,sbuff);
 			tGuiEditMsg.indexShow++;
 		}
 		if(keyNum) DisplayPaintEnd();
@@ -880,8 +537,8 @@ u32 API_UI_OprInfo(u16 keyNum)
 			{
 				tGuiEditMsg.Way=0;
 				API_GUI_ClearScreen(&tGuiEditMsg.Rect);
-				UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
-				tGuiEditMsg.oldTimeMs=UI_DrawRectString(&tGuiEditMsg.Rect,tGuiEditMsg.pShowInfo + tGuiEditMsg.Way);
+				ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+				tGuiEditMsg.oldTimeMs=ApiFont.DrawRectString(&tGuiEditMsg.Rect,tGuiEditMsg.pShowInfo + tGuiEditMsg.Way);
 			}
 		}
 		else if(keyNum==K_DOWN || keyNum==K_0)
@@ -890,8 +547,8 @@ u32 API_UI_OprInfo(u16 keyNum)
 			{
 				tGuiEditMsg.Way += tGuiEditMsg.oldTimeMs;
 				API_GUI_ClearScreen(&tGuiEditMsg.Rect);
-				UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
-				tGuiEditMsg.oldTimeMs=UI_DrawRectString(&tGuiEditMsg.Rect,tGuiEditMsg.pShowInfo + tGuiEditMsg.Way);
+				ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+				tGuiEditMsg.oldTimeMs=ApiFont.DrawRectString(&tGuiEditMsg.Rect,tGuiEditMsg.pShowInfo + tGuiEditMsg.Way);
 			}
 		}
 	}
@@ -899,8 +556,8 @@ u32 API_UI_OprInfo(u16 keyNum)
 	{
 		tGuiEditMsg.Way = 0;
 		tGuiEditMsg.Limit = API_strlen(tGuiEditMsg.pShowInfo); //初始长度
-		UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
-		tGuiEditMsg.oldTimeMs=UI_DrawRectString(&tGuiEditMsg.Rect,tGuiEditMsg.pShowInfo);
+		ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+		tGuiEditMsg.oldTimeMs=ApiFont.DrawRectString(&tGuiEditMsg.Rect,tGuiEditMsg.pShowInfo);
 		if((tGuiEditMsg.pAfterText!=NULL)&&(tGuiEditMsg.oldTimeMs<tGuiEditMsg.Limit))
 		{
 			POINT rclTrg;
@@ -912,7 +569,7 @@ u32 API_UI_OprInfo(u16 keyNum)
 				rclTrg.left =tGuiEditMsg.Rect.left;
 			rclTrg.top =tGuiEditMsg.Rect.top+tGuiEditMsg.Rect.height;
 			DisplayLineRGB(&rclTrg,width,1,RGB_CURR(30,30,30));
-			UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+			ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
 			UI_DrawString(&rclTrg,tGuiEditMsg.pAfterText);
 		}
 	}
@@ -975,7 +632,6 @@ u32 APP_UI_MenuShow(u16 keyNum)
 		
 	if(keyNum)
 	{
-/*
 		if(keyNum>=K_1 && keyNum<(K_1+MaxLine))
 		{
 			keyNum -= K_1;
@@ -1005,7 +661,6 @@ u32 APP_UI_MenuShow(u16 keyNum)
 			if(tGuiMenuMsg.KeyFunEn)
 				return (EVENT_KEY|K_FUNC);
 		}
-*/
 	}
 	//----------------------------------------------------------
 	//if(tGuiMenuMsg.ShowState)
@@ -1030,8 +685,8 @@ u32 APP_UI_MenuShow(u16 keyNum)
 				char sBuff[(SCREEN_APP_W*2/FONT_SIZE)+8];
 				tFontXY.left=SCREEN_MENU_X+4;
 				tGuiMenuMsg.ShowItem(tGuiMenuMsg.pMenu,tGuiMenuMsg.tCurHead+i,i+1,sBuff);
-				UI_SetFontColor(RGB565_TIEM_FONT,Color);
-				UI_DrawString(&tFontXY,sBuff);
+				ApiFont.SetFontColor(RGB565_TIEM_FONT,Color);
+				ApiFont.DrawLineString(&tFontXY,sBuff);
 			}
 			tFontXY.top += MENU_TIEM_H-(MENU_TIEM_H-FONT_SIZE)/2;
 		}
@@ -1048,8 +703,8 @@ u32 APP_UI_MenuShow(u16 keyNum)
 			//tFontXY.top=MENU_TIEM_ALL_Y+(MENU_TIEM_H-FONT_SIZE)/2+MENU_TIEM_H*i-1;
 			DisplayLineRGB(&tFontXY,tLenW,1,RGB_CURR(30,30,30));
 			tFontXY.top++;tFontXY.top++;
-			UI_SetFontColor(RGB565_TIEM_FONT,Color);
-			UI_DrawString(&tFontXY,tGuiMenuMsg.pAfterText);
+			ApiFont.SetFontColor(RGB565_TIEM_FONT,Color);
+			ApiFont.DrawLineString(&tFontXY,tGuiMenuMsg.pAfterText);
 		}
 		DisplayPaintEnd();
 	}
@@ -1107,8 +762,8 @@ int APP_GUI_Menu(char* pTitle,int stratIndex,int tNum,int tCurInx,char** pMenuTe
 		else
 			tFontXY.left=SCREEN_MENU_X+(SCREEN_MENU_W-sWidth)/2;
 		tFontXY.top =SCREEN_MENU_Y+(MENU_TITLE_H-FONT_SIZE)/2;
-		UI_SetFontColor(RGB565_WITHE,RGB565_PARENT);
-		UI_DrawString(&tFontXY,pTitle);
+		ApiFont.SetFontColor(RGB565_WITHE,RGB565_PARENT);
+		ApiFont.DrawLineString(&tFontXY,pTitle);
 	}
 	//-------------------显示菜单项--------------------------------
 	tFontXY.left=SCREEN_MENU_X;
@@ -1124,13 +779,13 @@ int APP_GUI_Menu(char* pTitle,int stratIndex,int tNum,int tCurInx,char** pMenuTe
 		{
 			tFontXY.left=SCREEN_MENU_X;
 			DisplayLineRGB(&tFontXY,SCREEN_MENU_W,MENU_TIEM_H,RGB565_SELE_ICON);
-			UI_SetFontColor(RGB565_SELE_FONT,RGB565_PARENT);
+			ApiFont.SetFontColor(RGB565_SELE_FONT,RGB565_PARENT);
 		}
 		else
-			UI_SetFontColor(RGB565_TIEM_FONT,RGB565_PARENT);
+			ApiFont.SetFontColor(RGB565_TIEM_FONT,RGB565_PARENT);
 		tFontXY.left=SCREEN_MENU_X+4;
 		tFontXY.top +=(MENU_TIEM_H-FONT_SIZE)/2;
-		UI_DrawString(&tFontXY,sBuff);
+		ApiFont.DrawLineString(&tFontXY,sBuff);
 	}
 	DisplayPaintEnd();
 	return 0;
@@ -1391,8 +1046,8 @@ void APP_ShowChangeInfo(char *pOriginal,int Originalsize,const char* format,...)
 	}
 	*/
 	if(offset) API_GUI_ClearScreen(&tRect);	//清空区域
-	UI_SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
-	UI_DrawRectString(&tRect,pOriginal);
+	ApiFont.SetFontColor(FONT_CONT_COLOUR,UI_CONT_COLOUR);
+	ApiFont.DrawRectString(&tRect,pOriginal);
 	DisplayPaintEnd();	
 }
 
@@ -1464,6 +1119,14 @@ void API_GUI_Draw565QRcode(RECTL* prclTrg,char *pInMsg,uint32 fgColor, uint32 bg
 }
 */
 
+//=============================================================================
+
+
+int APP_WaitUiEvent(int tTimeOutMS)
+{
+	return API_WaitEvent(tTimeOutMS,EVENT_UI,EVENT_NONE);
+}
+
 int API_GUI_Show(void)
 {
 	return DisplayPaintEnd();
@@ -1527,9 +1190,9 @@ void APP_HitMsg(const char* pMsg,int tTimeOutMS)
 	//-------------------------------------------
 	fTrg.left = mTrg.left+(mTrg.width-(slen*FONT_SIZE/2))/2; 
 	fTrg.top = mTrg.top+(mTrg.height-FONT_SIZE)/2;
-	UI_SetFontColor(RGB565_BLACK,0xDF1C);
-	//UI_SetFontColor(RGB565_RED|RGB565_GREEN,RGB565_PARENT);
-	UI_DrawString(&fTrg,pMsg);
+	ApiFont.SetFontColor(RGB565_BLACK,0xDF1C);
+	//ApiFont.SetFontColor(RGB565_RED|RGB565_GREEN,RGB565_PARENT);
+	ApiFont.DrawLineString(&fTrg,pMsg);
 	DisplayPaintEnd();
 	if(pLcdBuf)
 	{
@@ -1558,8 +1221,8 @@ void APP_GUI_LineMenu(char* pTitle,char **pLineText,u16 LineMax,char* pAfterText
 		else
 			tFontXY.left=SCREEN_MENU_X+(SCREEN_MENU_W-sWidth)/2;
 		tFontXY.top =SCREEN_MENU_Y+(MENU_TITLE_H-FONT_SIZE)/2;
-		UI_SetFontColor(RGB565_WITHE,RGB565_PARENT);
-		UI_DrawString(&tFontXY,pTitle);
+		ApiFont.SetFontColor(RGB565_WITHE,RGB565_PARENT);
+		ApiFont.DrawLineString(&tFontXY,pTitle);
 	}
 	//-------------------显示内容--------------------------------
 	if(LineMax&0x8000)
@@ -1583,14 +1246,14 @@ void APP_GUI_LineMenu(char* pTitle,char **pLineText,u16 LineMax,char* pAfterText
 		if(i < LineMax)
 		{
 			tFontXY.left=SCREEN_MENU_X+4;
-			UI_SetFontColor(RGB565_WITHE,RGB565_PARENT);// 设置字体颜色
+			ApiFont.SetFontColor(RGB565_WITHE,RGB565_PARENT);// 设置字体颜色
 			if(sBuff[1])
 			{
 				sBuff[0]='0'+1+i;
-				UI_DrawString(&tFontXY,sBuff);
+				ApiFont.DrawLineString(&tFontXY,sBuff);
 				tFontXY.left=SCREEN_MENU_X+4+FONT_SIZE;
 			}
-			UI_DrawString(&tFontXY,pLineText[i]);
+			ApiFont.DrawLineString(&tFontXY,pLineText[i]);
 		}
 		tFontXY.top += MENU_TIEM_H-(MENU_TIEM_H-FONT_SIZE)/2;
 	}
@@ -1602,60 +1265,14 @@ void APP_GUI_LineMenu(char* pTitle,char **pLineText,u16 LineMax,char* pAfterText
 			tFontXY.left=(SCREEN_MENU_W - With);
 			DisplayLineRGB(&tFontXY,With,1,RGB565_WITHE);
 			tFontXY.top++;tFontXY.top++;
-			UI_SetFontColor(RGB565_WITHE,RGB565_PARENT);// 设置字体颜色
-			UI_DrawString(&tFontXY,pAfterText);
+			ApiFont.SetFontColor(RGB565_WITHE,RGB565_PARENT);// 设置字体颜色
+			ApiFont.DrawLineString(&tFontXY,pAfterText);
 		}
 	}
 	//----------------------------------推送显示----------------------------------------------------
 	DisplayPaintEnd();
 }
 
-void API_UI_ShowQrCode(RECTL* pRect,const char* pInfo,u32 Color)
-{
-	IMAGE image;
-	if(0==Lib_QrCodeImg(&image,pInfo,FALSE))
-	{
-		RECTL oImage;
-		u8 *pByte;
-		pixel_bgra8888_t *pbgra;
-		u16 x,y,ix,mx,iy,my;
-		//----保持长宽比，按最小宽度放大--------------
-		mx = MIN(pRect->width,pRect->height)/image.w;
-		my = mx;
-		//------不保持长宽比，按指定区域放大---------
-		//mx =pRect->width/image.w;
-		//my = pRect->height/image.h;
-		oImage.width = image.w * mx;
-		oImage.height = image.h * my;
-		oImage.left = pRect->left;
-		oImage.top = pRect->top;
-		if(pRect->width > oImage.width)
-			oImage.left +=(pRect->width - oImage.width)/2;
-		if(pRect->height > oImage.height)
-			oImage.top +=(pRect->height - oImage.height)/2;		
-		
-		for(x=0 ;x<image.w ; x++)
-		{
-			pByte = &image.pByte[x*image.mline];
-			for(y = 0; y < image.h; y++) 
-			{
-				if(pByte[y])
-				{
-					for(iy=0;iy<my;iy++)	
-					{
-						pbgra=&UI_screen.bgra8888buff[(oImage.top + y*my+iy)*UI_screen.width + oImage.left + x*mx];
-						for(ix=0;ix<mx;ix++)
-						{
-							*(u32*)pbgra = Color;
-							pbgra++;
-						}
-					}
-				}
-			}
-		}
-		DisplayPaintEnd();
-	}
-}
 
 
 
@@ -1671,10 +1288,10 @@ void APP_ShowNumberL(RECTL *pRect,int num)
 		showbuff[--slen]=num%10+'0';
 		num /=10;
 	}
-	UI_DrawRectString(pRect,showbuff+slen);
+	ApiFont.DrawRectString(pRect,showbuff+slen);
 	DisplayPaintEnd();
 }
-
+/*
 //================倒计时显示=================
 static RECTL rgTimeRect;
 static u32 ShowTimeS,SeedTimeS;
@@ -1717,10 +1334,6 @@ void gShowTimeS_SetInit(u32 tTextType,int len,int timeS)
 }
 
 
-
-
-
-
 int gShowTimeS_GetOut(void)
 {
 	u32 CurrSec;
@@ -1734,8 +1347,12 @@ int gShowTimeS_GetOut(void)
 	}
 	return 0;//EVENT_NONE;
 }
+*/
 
 
 
-
+const API_GUI_Def ApiGUI={
+	{'G','U','I',26},
+	
+};
 

@@ -6,6 +6,7 @@
 #include "xui_fb.h"
 #include "xui_show.h"
 #include "xui_font.h"
+#include "xui_ui.h"
 #include "xui_gui.h"
 #include "EvenMsg.h"
 #include "QR_Encode.h"

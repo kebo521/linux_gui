@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//#define DISPLAY_HORIZONTAL_SCREEN		//横屏定义
 
 
 typedef enum _ret_t { RET_OK = 0, RET_OOM, RET_ERR,RET_FAIL, RET_BAD_PARAMS } ret_t;
@@ -62,6 +63,18 @@ typedef signed int			s32;	//!< Define s32
 typedef unsigned int			u32;	//!< Define u32
 
 
+
+
+typedef struct{
+	int Year; /*年1970– 2037*/
+	int Month; /*月1 –12*/
+	int Day; /*日1 –31*/
+	int Hour; /*时0 – 23*/
+	int Minute; /*分0 –59*/
+	int Second; /*秒0 –59*/
+	int DayOfWeek; /*周1–周7（仅读取时间有效）*/
+} ST_TIME;
+
 //#define		TRACE			printf
 
 #define log_debug(format, args...) printf(format, ##args)
@@ -79,8 +92,26 @@ typedef int (*APP_HANDLE)(char*);
 #define API_memmove	memmove
 #define API_sprintf	sprintf
 
+extern void API_Trace(char* pMsg,...);
+extern void APP_Trace_Hex(char* msg,void* pBuff,int Len);
+
+#define TRACE							API_Trace		//MercuryTrace		//
+#define TRACE_HEX(msg,pBuff,Len)		APP_Trace_Hex(msg,pBuff,Len)
+
+//===================================================================================
 
 
+typedef struct{
+  u16 left;
+  u16 top;
+} POINT, *PPOINT;
+
+typedef struct{
+  u16 left;
+  u16 top;
+  u16 width;
+  u16 height;
+}RECTL,*LPRECTL;
 
 //===================================================================================
 

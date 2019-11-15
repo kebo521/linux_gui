@@ -5,7 +5,7 @@ SRC := *.c
 #SRC += ./tree/*.c
 
 all:
-	$(CC) -g -Wall $(SRC) -lm -o bin/xshow
+	$(CC) -g -Wall $(SRC) -lm -lpthread -o bin/xshow
 clean:
 	rm -f bin/*
 	

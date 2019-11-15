@@ -27,20 +27,6 @@
 #define FONT_SIZE    			(24)    
 #define DOTS_BYTES    			((FONT_SIZE * FONT_SIZE / 8))
 
-typedef struct _POINT {
-  u16 left;
-  u16 top;
-} POINT, *PPOINT;
-
-typedef struct _tagRECTL {
-  u16 left;
-  u16 top;
-  u16 width;
-  u16 height;
-}RECTL, *PRECTL, *LPRECTL;
-
-
-
 //=============================================ks文件定义========================================================
 typedef struct 										// APP安装包文件头
 {
@@ -134,13 +120,33 @@ typedef struct
 extern DisRES_table resDisTable;
 
 extern int InitExtResLib(char *pfile);
-extern void ExtResLib_DeInit(void);
+extern void DeInitExtResLib(void);
 
 //==================显示中文，需要字库ks.res支持===================================
 extern void UI_SetFontColor(u32 fgColor,u32 bgColor);
-extern int UI_DisplayString(POINT* prclTrg, u8* hzData);
-extern int UI_DrawString(POINT* prclTrg,const char *src);
+extern int UI_DisplayFont(POINT* prclTrg, u8* hzData);
+extern int UI_DrawLineString(POINT* prclTrg,const char *src);
 extern int UI_DrawRectString(RECTL* pRect,const char *src);
+
+extern void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms);
+
+typedef struct	
+{
+	char Mask[4]; 	// "Fnt"
+	void (*DisplaySysString)(u8,char*,int);
+	
+	int (*InitFontLib)(char*);		//(char *pfile)
+	void (*DeInitFontLib)(void);	//
+	void (*SetFontColor)(u32,u32);	//(u32 fgColor,u32 bgColor) RGB_CURR
+	int (*DisplayFont)(POINT*,u8*);	//(POINT* prclTrg, u8* hzData)
+	int (*DrawLineString)(POINT*,const char*);//Display single line of text, no automatic line breaks
+	int (*DrawRectString)(RECTL*,const char*);//The specified area displays text and wraps automatically
+}API_FONT_Def;
+
+
+extern const API_FONT_Def ApiFont;
+
+
 
 
 #endif /*LINUX_FB_H*/

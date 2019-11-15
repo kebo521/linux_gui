@@ -31,12 +31,55 @@
 
 #include "types_def.h"
 
+#include "xui_ui.h"
 #include "xui_fb.h"
 #include "xui_show.h"
 #include "xui_font.h"
+
+
 #include "xui_gui.h"
 
+#include "fontEn_6x12.h"
 
+
+
+//==================显示英文，不需要字库支持===================================
+void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms)
+{
+	u32 *pbgra;
+	u8	i,j,jn,jb;	//readLen,
+	u16 x,y;	
+
+	x = 0;
+	y = Line*12;
+	while((jn=(u8)*pMsgEn++) != '\0')
+	{
+		if(jn >= 0x20)
+		{
+			if((x+6) >= UI_screen.width) 
+			{//--Automatic line feed display---
+				x = 0;
+				y += 12;
+			}
+			if((y+12) >= UI_screen.height) break;
+			
+			for(i = 0; i < 12; i++)
+			{	 
+				pbgra = &UI_screen.widget[(y+i)*UI_screen.width + x];
+				jb = funt6x12EnBuff[(jn-0x20)*12 + i];
+				for(j = 0; j < 6; j++)
+				{
+					if(jb & (0x80>>j))
+						*pbgra = 0xffffffff;
+					pbgra++;
+				}
+			}
+		}
+		x += 6;
+	}
+	ApiUI.Push(NULL);
+	if(timeoutms) sleep(timeoutms/1000);
+}
 
 
 #if(1)
@@ -58,13 +101,13 @@ int InitExtResLib(char *pfile)
 	{
 		TRACE("open read %s err[%d].\r\n",pfile,fd);
 	//	UnInitFileSystem();
-		APP_ShowLineEn(1,"open ks.res err Necessary download of ks.res",10*1000);
+		API_ShowLineEn(1,"open ks.res err Necessary download of ks.res",10*1000);
 		return -1;
 	}
 	if(sizeof(HerdBuff) != read(fd,&HerdBuff,sizeof(HerdBuff)))
 	{
 		TRACE("fs read %s Head res err.\r\n",pfile);
-		APP_ShowLineEn(1,"read ks.res err Necessary download of ks.res",10*1000);
+		API_ShowLineEn(1,"read ks.res err Necessary download of ks.res",10*1000);
 		close(fd);
 		return -2;
 	}
@@ -72,7 +115,7 @@ int InitExtResLib(char *pfile)
 	if(memcmp(phead->mask, "RESA", 4)) 
 	{
 		//TRACE_HEX("Err res mask head",&phead,sizeof(RES_Head));
-		APP_ShowLineEn(1,"ks.res mask err Necessary download of ks.res",10*1000);
+		API_ShowLineEn(1,"ks.res mask err Necessary download of ks.res",10*1000);
 		close(fd);
 		return -3;
 	}
@@ -134,7 +177,7 @@ int InitExtResLib(char *pfile)
 					TRACE_HEX("sha256-O", tKspSignContext->hashResult, 32);
 					TRACE_HEX("sha256-C", shaResult, 32);
 					//API_fclose(fd);
-					APP_ShowLineEn(2,"error check ks.res sign",10*1000);
+					API_ShowLineEn(2,"error check ks.res sign",10*1000);
 					//return -5;
 				}
 			}
@@ -144,7 +187,7 @@ int InitExtResLib(char *pfile)
 		{
 			TRACE("res signinfo check err.\r\n");
 			//API_fclose(fd);
-			APP_ShowLineEn(2,"error check ks.res signlen",10*1000);
+			API_ShowLineEn(2,"error check ks.res signlen",10*1000);
 			//return -4;
 		}	
 
@@ -212,7 +255,7 @@ int InitExtResLib(char *pfile)
 	{
 		TRACE("res no f24_enn err.\r\n");
 		close(fd);
-		APP_ShowLineEn(2,"error\nread f24_enn not",10*1000);
+		API_ShowLineEn(2,"error\nread f24_enn not",10*1000);
 		return -6;
 	}
 	resDisTable.resFd.reqLen_en   = 48;
@@ -231,7 +274,7 @@ int InitExtResLib(char *pfile)
 
 
 
-void ExtResLib_DeInit(void)
+void DeInitExtResLib(void)
 {
 	free(resDisTable.pbFont);
 	memset(&resDisTable,0x00,sizeof(resDisTable));
@@ -446,9 +489,9 @@ void UI_SetFontColor(u32 fgColor,u32 bgColor)
 	//LCD_SetColorRGB565(fgColor,bgColor);
 }
 
-int UI_DisplayString(POINT* prclTrg, u8* hzData)
+int UI_DisplayFont(POINT* prclTrg, u8* hzData)
 {
-	pixel_bgra8888_t *pbgra;
+	u32 *pbgra;
 	u8 *s_dots;
     RECTL rect;
 	int  offset;
@@ -484,7 +527,7 @@ int UI_DisplayString(POINT* prclTrg, u8* hzData)
     for (i = 0; i < FONT_SIZE; i++)
     {    
     	if((u16)(rect.top+i) >= UI_screen.height) break;
-    	pbgra=&UI_screen.bgra8888buff[(rect.top+i)*UI_screen.width+rect.left];
+    	pbgra=&UI_screen.widget[(rect.top+i)*UI_screen.width+rect.left];
         for (j = 0; j < rect.width; j+=8)
         {
         	db=*s_dots++;
@@ -495,12 +538,12 @@ int UI_DisplayString(POINT* prclTrg, u8* hzData)
         		if((u16)(rect.left+j+wi) >= UI_screen.width) break;
 				if(db&0x80) 	//if((db<<(wi&0x07)) & 0x80)	//
 				{
-					*((u32*)pbgra) = *(u32*)&uiFontColor;
+					*pbgra = *(u32*)&uiFontColor;
 				}
 				else
 				{
 					if(uiBgColor.a == 0)
-						*((u32*)pbgra) = *(u32*)&uiBgColor;
+						*pbgra = *(u32*)&uiBgColor;
 				}
 				pbgra++; db<<=1;
 			}
@@ -509,7 +552,7 @@ int UI_DisplayString(POINT* prclTrg, u8* hzData)
 	return rect.width;
 }
 
-int UI_DrawString(POINT* prclTrg,const char *src)
+int UI_DrawLineString(POINT* prclTrg,const char *src)
 {
 	int ret,offset=0;
 	POINT rclTrg;
@@ -519,7 +562,7 @@ int UI_DrawString(POINT* prclTrg,const char *src)
 	{
 		if(src[offset] & 0x80)
 		{
-			ret=UI_DisplayString(&rclTrg,(u8*)src+offset);
+			ret=UI_DisplayFont(&rclTrg,(u8*)src+offset);
 			if(ret <= 0) break;
 			rclTrg.left += ret;	
 			offset++;
@@ -531,7 +574,7 @@ int UI_DrawString(POINT* prclTrg,const char *src)
 		}
 		else if(src[offset] >= ' ')
 		{
-			ret=UI_DisplayString(&rclTrg,(u8*)src+offset);
+			ret=UI_DisplayFont(&rclTrg,(u8*)src+offset);
 			if(ret <= 0) break;
 			rclTrg.left += ret;
 		}
@@ -559,7 +602,7 @@ int UI_DrawRectString(RECTL* pRect,const char *src)
 					return offset;
 				rclTrg.left = pRect->left;
 			}
-			rclTrg.left += UI_DisplayString(&rclTrg,(u8*)src+offset);
+			rclTrg.left += UI_DisplayFont(&rclTrg,(u8*)src+offset);
 			offset++;
 		}
 		else if(src[offset] == '\n')
@@ -586,12 +629,25 @@ int UI_DrawRectString(RECTL* pRect,const char *src)
 			else
 				DisplayString(&rclTrg, (LPBYTE)sBuff);
 				*/
-			rclTrg.left += UI_DisplayString(&rclTrg,(u8*)src+offset);
+			rclTrg.left += UI_DisplayFont(&rclTrg,(u8*)src+offset);
 		}
 		offset++;
 	}
 	return offset;
 }
+
+const API_FONT_Def ApiFont={
+	{'F','N','T',6},
+	API_ShowLineEn,
+	
+	InitExtResLib,
+	DeInitExtResLib,
+
+	UI_SetFontColor,
+	UI_DisplayFont,
+	UI_DrawLineString,
+	UI_DrawRectString,
+};
 
 #endif
 

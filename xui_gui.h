@@ -1,9 +1,8 @@
 
 
-#ifndef _UI_DISPLAY_
-#define _UI_DISPLAY_
+#ifndef _GUI_DISPLAY_
+#define _GUI_DISPLAY_
 
-//#define DISPLAY_HORIZONTAL_SCREEN		//∫·∆¡∂®“Â
 
 
 
@@ -59,11 +58,9 @@ typedef enum
 }IME_TYPE;			//V1.2	
 
 
-
 #define FONT_SIZE    			(24)    
 #define HZ_INDEX(hz)    		((hz[0] - 0xa1) * 94 + (hz[1] - 0xa1))
 #define DOTS_BYTES    			((FONT_SIZE * FONT_SIZE / 8))
-#define	RGB_CURR(r,g,b)		((r*0x10000)|(g*0x100)|b)	//(u32)(rgba_t)(b,g,r,0xff))
 
 #define RGB565_WITHE		RGB_CURR(0xff,0xff,0xff)	//0x0000FFFF
 #define RGB565_BLACK		RGB_CURR(0x00,0x00,0x00)	//0x00000000
@@ -185,23 +182,6 @@ typedef enum
 #endif
 
 
-/**
- * GUI÷ß≥÷µƒÕºœÒ∏Ò Ω∂®“Â
- */
-typedef struct
-{
-	u16					w;				//!< ÕºœÒøÌ
-	u16					h;				//!< ∏ﬂ
-	u16					mline,len;				//!< ∏ﬂ
-	u8*					pByte;			
-}IMAGE;									
-
-
-typedef struct
-{
-	RECTL 	Rect;
-	u16	LcdBuff[2];		//!< µ•…´Õº∆¨≥§∂»Œ™:num * ((w+8-1)/8) * h <br/> ≤ …´Õº∆¨≥§∂»Œ™:num * w * h * (DISP_DEPTH/8)
-}DisplayBackup;		
 
 typedef enum
 {
@@ -213,7 +193,6 @@ typedef enum
 	MENU_MUILT_LINE		=0x1000,			//∂‡––Œƒ±æ,		”Î∆‰À¸¿‡–Õ◊È∫œ π”√
 	MENU_MAX			=0xFFFF
 }UI_MENU_TYPE;
-
 /**
  * Œƒ±æœ‘ æ¿‡–Õ∂®“Â
  */
@@ -256,37 +235,14 @@ typedef enum
 #define TCANCEL					"CANCEL"
 
 
-typedef struct {
-	unsigned short left,top;
-	unsigned short width;	//Window ÂÆΩÂ∫¶
-	unsigned short height;	//Window È´òÂ∫¶
-	unsigned short key;		//ÂÖ≥ËÅîÊåâÈîÆÂÄº
-	unsigned short type;	//Window Á™óÂè£Á±ªÂûãÔºåËØ¶ËßÅXuiWindowType
-	union 
-	{
-		unsigned char* widget;	//Window ÂÖ≥ËÅîÁîªÂ∏ÉÊåáÈíà
-		pixel_rgb565_t *rgb565buff;
-		pixel_bgra8888_t *bgra8888buff;
-	};
-	screen_buffer *fb;
-} XuiWindow;
-extern XuiWindow UI_screen;
 
-extern int XuiRootCanvas(screen_buffer* fb);
-extern void XuiPush(void);
-extern void XuiClose(void);
 
+extern int APP_WaitUiEvent(int tTimeOutMS);
 //=================================================================================
-extern int UI_ShowPictureFile(RECTL *prclTrg,const char *pfilePath);
 
-extern void UI_DisplayBitMapGet(u16 x,u16 y,u16 w,u16 h);
-extern void UI_DisplayBitMapSet(void);
-extern void UI_DisplayBitMapEND(void);
-
-extern void UI_ShowBottomProgress(u8 ratio);
-extern void UI_ShowParMiddleSlide(u8 par,int ratio);
-//==================œ‘ æ”¢Œƒ£¨≤ª–Ë“™◊÷ø‚÷ß≥÷===================================
-extern void APP_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms);
+//extern void UI_DisplayBitMapGet(u16 x,u16 y,u16 w,u16 h);
+//extern void UI_DisplayBitMapSet(void);
+//extern void UI_DisplayBitMapEND(void);
 
 //==================================================================================
 extern void UI_ShowColorRect(RECTL *pRect,u16 Width,u32 Color);
@@ -375,8 +331,6 @@ extern int APP_ShowInfo(char *pTitle,char *pInfo,int timeOutMs);
 
 extern void APP_HitMsg(const char* pMsg,int tTimeOutMS);
 
-extern void API_UI_ShowQrCode(RECTL* pRect,const char* pInfo,u32 Color);
-
 /**
  * ππΩ®“ª∏ˆGUI≤Àµ•––¡–±Ì 
  * @param pTitle 		ΩÁ√Ê±ÍÃ‚
@@ -428,8 +382,14 @@ typedef int (*fOption_RunItem)(char*,int);
 int APP_GUI_OpProcess(char *pTitle,fOption_ShowItem pFunShowItem,fOption_RunItem pFunRunItem,APP_HANDLE pFunKey);
 
 
+typedef struct	
+{
+	char Mask[4]; 	// "UI"
+	
+}API_GUI_Def;
 
 
+extern const API_GUI_Def ApiGUI;
 
 #endif
 

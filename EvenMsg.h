@@ -19,17 +19,16 @@ typedef enum
 	EVEN_ID_MSG_TASK,	//pFunMessageTask
 } EVEN_MSG_STATE;
 
-
+extern void FIFO_Init(int pshared, unsigned int value);
 extern void FIFO_OperatSetMsg(u16 MessageID,u16 Message);
 extern int FIFO_OperatGetMsg(u16 *pMessageID,u16 *pMessage);
 extern int FIFO_OperatPeekGetMsg(u16 *pMessageID,u16 *pMessage);
 
-//extern void *APP_OperationKillThread();
 
 extern void APP_PushMessageTask(fPushTaskMsg pFun,u16 par);
 
-extern void APP_OperationCreateThread(int pFunThread,u32 cbStack);
-
+//extern void APP_OperationKillThread(void* threadID);
+//extern void APP_OperationCreateThread(void *(*pFunThread)(void*));
 //extern void APP_OperationLoadThread(void* threadID);
 
 
@@ -70,8 +69,8 @@ extern void APP_OperationCreateThread(int pFunThread,u32 cbStack);
 	//-------¶¨Ê±Æ÷¿ØÖÆ---------------------
 	extern void StartTimed500ms(void);
 	extern void StopTimed500ms(void);
-	extern void Set_WaitEvent(int tTimeOutMs,u32 EventControl);
-	extern void Get_EventMsg(int *pTimeOutMs,u32 *pEventControl);
+//	extern void Set_WaitEvent(int tTimeOutMs,u32 EventControl);
+//	extern void Get_EventMsg(int *pTimeOutMs,u32 *pEventControl);
 	extern void Rewrite_WaitTime(int tTimeOutMs);
 
 	typedef u32 (*fEven_Process)(u16);
@@ -96,7 +95,23 @@ extern void APP_OperationCreateThread(int pFunThread,u32 cbStack);
 	extern u32  API_WaitEvent(int tTimeOutMs,...);
 	
 
-	
 
-	
+	typedef struct	
+	{
+		char Mask[4]; 	// "Even"
+		void (*Init)(int,unsigned int);	//int pshared, unsigned int value
+		void (*DeInit)(void);
+		void (*SetMsg)(u16,u16);
+		int (*GetMsg)(u16*,u16*);
+		int (*GetMsgPeek)(u16*,u16*);
+		void (*KillThread)(void*);
+		void (*CreateThread)(void *(*pFunThread)(void*));
+		void (*LoadThread)(void*); 
+		void (*SetEvent)(int,u32);
+		void (*GetEvent)(int *,u32 *);
+		void (*SetEventTime)(int );
+		u32  (*WaitEvent)(int,...);
+	}API_Even_Def;
+
+	extern const API_Even_Def ApiEven;
 #endif

@@ -4,10 +4,12 @@
 #include <signal.h>
 #include <sys/time.h>
 #include<pthread.h>
+#include<semaphore.h>
 
 #include "types_def.h"
 #include "EvenMsg.h"
 #include "xui_show.h"
+#include "key_hard.h"
 
 
 
@@ -26,49 +28,111 @@ typedef struct _CMessageTable
 static CMessageTable *pMessageTable=NULL;
 
 //==================================================================
+static sem_t g_sem_event;
+
+void FIFO_OperatInit(int pshared, unsigned int value)
+{
+	sem_init(&g_sem_event,pshared,value);
+}
+
+void FIFO_OperatDeInit(void)
+{
+	//sem_init(&g_sem_event,pshared,value);
+}
+
 
 void FIFO_OperatSetMsg(u16 MessageID,u16 Message)
 {
-	
+	if(pMessageTable)
+	{//----------FIFO------------------------
+		register unsigned int WriteID;
+		WriteID=0x03&(pMessageTable->WriteID++);	
+		pMessageTable->MessageID[WriteID]=MessageID;
+		pMessageTable->MessagePar[WriteID]=Message;
+		sem_post(&g_sem_event);
+		//-----检查消息堆已满,覆盖最第一条倒入的消息---------
+		//if(!((pMessageTable->WriteID ^ pMessageTable->ReadID)&0x03))
+		//	pMessageTable->ReadID++;
+		TRACE("FIFO_OperatSetMsg[%X] WriteID[%d]MessageID[%d]Message[%d]\r\n",pMessageTable->threadID,WriteID, MessageID, Message);
+	}
 }
 //阻塞式接收消息接口
 int  FIFO_OperatGetMsg(u16 *pMessageID,u16 *pMessage)
 {
+	if(pMessageTable)
+	{
+		register unsigned int ReadID=0x03&pMessageTable->ReadID;
+	Adder_ReOperatGetMsgRead:
+		if(!(ReadID ^ (pMessageTable->WriteID&0x03)))
+		{//-------没消息读消息----------
+			sem_wait(&g_sem_event);
+		}
+		//--------有消息取消息--------------------
+		if(ReadID ^ (pMessageTable->WriteID&0x03))
+		{//----------FIFO------------------------
+			register unsigned short MessageID,MessagePar;
+			pMessageTable->ReadID++;
+			MessageID=pMessageTable->MessageID[ReadID];
+			MessagePar=pMessageTable->MessagePar[ReadID];
+			//----------极限任务-----------
+			if(MessageID == EVEN_ID_MSG_TASK)
+			{
+				if(pMessageTable->pFunMessageTask)
+					(*pMessageTable->pFunMessageTask)(MessagePar);
+				ReadID++;
+				ReadID &= 0x03;
+				goto Adder_ReOperatGetMsgRead;
+			}					
+			if(pMessageID)
+				*pMessageID=MessageID;
+			if(pMessage)
+				*pMessage=MessagePar;
+			TRACE("FIFO_OperatGetMsg[%X]ReadID[%d]MessageID[%d]Message[%d]\r\n",pMessageTable->threadID,ReadID, *pMessageID, *pMessage);
+			return 1;
+		}
+	}
 	return 0;
 }
 
 //=====非阻塞式接收消息接口=========================
 int  FIFO_OperatPeekGetMsg(u16 *pMessageID,u16 *pMessage)
 {
+	if(pMessageTable)
+	{
+		register unsigned int ReadID=0x03&pMessageTable->ReadID;
+	Adder_ReOperatPeekGetMsg:
+		if(ReadID ^ (pMessageTable->WriteID&0x03))
+		{//----------FIFO----有消息---------------------
+			register unsigned short MessageID,MessagePar;
+			pMessageTable->ReadID++;
+			MessageID=pMessageTable->MessageID[ReadID];
+			MessagePar=pMessageTable->MessagePar[ReadID];
+			//----------消息任务-----------
+			if(MessageID == EVEN_ID_MSG_TASK)
+			{
+				if(pMessageTable->pFunMessageTask)
+					pMessageTable->pFunMessageTask(MessagePar);
+				ReadID++;
+				ReadID &= 0x03;
+				goto Adder_ReOperatPeekGetMsg;
+			}					
+			if(pMessageID)
+				*pMessageID=MessageID;
+			if(pMessage)
+				*pMessage=MessagePar;
+			return 1;
+		}
+		/*
+		else
+		{//-------清空消息队列----------
+			MERCURY_MESSAGE_S* msg;
+			MercuryPeekMessage(&msg,GetCurrentThread());
+		}	*/
+	}
 	return 0;
 }
 
 
-
-//======================================================================================
-void  *APP_OperationKillThread()
-{
-	CMessageTable* pMsgTable;
-	if(pMessageTable)
-	{
-		//if(threadID == NULL)
-		{
-			pMsgTable=pMessageTable;
-			pMessageTable=pMsgTable->pPrevious;
-			free(pMsgTable);
-			TRACE("APP OperationKillThread pMessageTable[%X],threadID[%X]\r\n",pMessageTable,pMessageTable->threadID);
-			//return NULL;
-		}
-		pMsgTable=pMessageTable;
-		pMessageTable=pMsgTable->pPrevious;
-		free(pMsgTable);
-		//------通知上层应用继续执行-------
-		FIFO_OperatSetMsg(EVEN_ID_FUNTION_OUT,0);
-		//------结束当前线程----------
-		//ExitThread(threadID);
-	}
-	return NULL;
-}
 
 
 void APP_PushMessageTask(fPushTaskMsg pFun,u16 par)
@@ -80,37 +144,60 @@ void APP_PushMessageTask(fPushTaskMsg pFun,u16 par)
 	}
 }
 
-void APP_OperationCreateThread(int pFunThread,u32 cbStack)
+//======================================================================================
+void APP_OperationKillThread(void* threadID)
+{
+	CMessageTable* pMsgTable;
+	if(pMessageTable)
+	{
+		if(threadID == NULL)
+		{
+			pMsgTable=pMessageTable;
+			pMessageTable=pMsgTable->pPrevious;
+			free(pMsgTable);
+			//TRACE("APP OperationKillThread pMessageTable[%X],threadID[%X]\r\n",pMessageTable,pMessageTable->threadID);
+			return;
+		}
+		pMsgTable=pMessageTable;
+		pMessageTable=pMsgTable->pPrevious;
+		free(pMsgTable);
+		//------通知上层应用继续执行-------
+		FIFO_OperatSetMsg(EVEN_ID_FUNTION_OUT,0);
+		//------结束当前线程----------
+		pthread_cancel((pthread_t)threadID);
+		//ExitThread(threadID);
+	}
+}
+
+
+void APP_OperationCreateThread(void *(*pFunThread)(void*))
 {
 	CMessageTable* pMsgTable;
 	pMsgTable = (CMessageTable*)malloc(sizeof(CMessageTable));
 	API_memset(pMsgTable,0x00,sizeof(CMessageTable));
-	//pMsgTable->threadID  = CreateThread(NULL,cbStack, pFunThread,0,APP_OperationKillThread,STACK_SIZE_RESERVATION,NULL);
-	/*
-	if(pthread_create(&pMsgTable->threadID, NULL,APP_OperationKillThread,NULL))
+	if(pthread_create(&pMsgTable->threadID, NULL,pFunThread,NULL))
 	{
 		TRACE("pthread create error!\r\n");
 		return;
 	}
-	*/
 	pMsgTable->pFunMessageTask = NULL;
 	pMsgTable->pPrevious = pMessageTable;
 	pMessageTable=pMsgTable;
 	TRACE("APP OperationCreateThread pMessageTable[%X],threadID[%X]\r\n",pMessageTable,pMessageTable->threadID);
 }
 
-/*
-void APP_OperationLoadThread(u32 threadID)
+void APP_OperationLoadThread(void* threadID)
 {
 	CMessageTable* pMsgTable;
 	pMsgTable = (CMessageTable*)malloc(sizeof(CMessageTable));
 	API_memset(pMsgTable,0x00,sizeof(CMessageTable));
-	pMsgTable->threadID = threadID;
+	pMsgTable->threadID =(pthread_t)threadID;
 	pMsgTable->pFunMessageTask = NULL;
 	pMsgTable->pPrevious = pMessageTable;
 	pMessageTable=pMsgTable;
 	TRACE("APP OperationLoadThread pMessageTable[%X],threadID[%X]\r\n",pMessageTable,pMessageTable->threadID);
-}*/
+}
+
 //=======================================================================================
 //==================500ms定时器模块======================================================
 static int tTimeOutMsEvent=0,externalLoadTimeMs=0;
@@ -291,12 +378,12 @@ u32  API_WaitEvent(int tTimeOutMs,...)
 			{
 				if(tWaitEventMsg.EventControl&EVENT_UI)
 				{
-					if(Message==1)
+					if(Message==K_OK)
 					{
 						Event=EVENT_OK;
 						break;
 					}
-					if(Message==2)
+					if(Message==K_CANCEL)
 					{
 						Event=EVENT_CANCEL;
 						break;
@@ -304,7 +391,7 @@ u32  API_WaitEvent(int tTimeOutMs,...)
 				}
 				if(tWaitEventMsg.EventControl&EVENT_MISC)
 				{
-					if(Message==3)
+					if(Message==K_FUNC)
 					{
 						Event=EVENT_QUIT;
 						break;
@@ -364,6 +451,23 @@ u32  API_WaitEvent(int tTimeOutMs,...)
 }
 
 
+
+const API_Even_Def ApiEven={
+	{'E','V','E',12},
+	FIFO_OperatInit,
+	FIFO_OperatDeInit,
+	FIFO_OperatSetMsg,
+	FIFO_OperatGetMsg,
+	FIFO_OperatPeekGetMsg,
+	APP_OperationKillThread,
+	APP_OperationCreateThread,
+	APP_OperationLoadThread,
+
+	Set_WaitEvent,
+	Get_EventMsg,
+	Rewrite_WaitTime,
+	API_WaitEvent,
+};
 
 
 

@@ -30,7 +30,6 @@
 #include <sys/ioctl.h>
 
 #include "xui_fb.h"
-//#include "xui_show.h"
 
 
 /*
@@ -113,6 +112,7 @@ screen_buffer* open_screen(const char* filename)
 	struct fb_var_screeninfo var;
 	struct fb_fix_screeninfo fix;
 	screen_buffer *pFb=NULL;	
+	printf("open screen open[%s]\r\n",filename);
 	pFb = (screen_buffer*)malloc(sizeof (screen_buffer));
 	if ((pFb->dev_fd = open(filename, O_RDWR)) == -1) {
 		printf("open screen open[%s] Err\r\n",filename);
@@ -120,7 +120,7 @@ screen_buffer* open_screen(const char* filename)
 	}
 	ret = ioctl(pFb->dev_fd, FBIOGET_VSCREENINFO, &var);
 	if (ret) {
-		printf("open_screen in %s line %d\r\n",__FUNCTION__,__LINE__);
+		printf("open screen in %s line %d\r\n",__FUNCTION__,__LINE__);
 		return NULL;
 	} else {
 		pFb->width = var.xres;
@@ -550,18 +550,32 @@ int xui_fb_show_rect(screen_buffer* fb, int x, int y, int w, int h,rgba_t* rgba)
 int xui_fb_rect_push(screen_buffer* fb, int x, int y, int w, int h,rgba_t* pInrgb) 
 {
 	int i,j;
-	pixel_bgra8888_t *pbgra;
+	u32 *destin,*source;
+	source=(u32*)pInrgb;
+	#ifdef DISPLAY_HORIZONTAL_SCREEN
+	destin=(u32*)fb->bgra8888buff;
+	w += y;
+	h += x;
+	for(i=x; i<h; i++)
+	{
+		j = w;
+		while(j-- > y) 
+		{
+			destin[j*fb->width + i] = *source++;
+		}
+	}
+	#else
 	w += x;
 	h += y;
 	for (j = y; j < h; j++) 
 	{
-		pbgra=&fb->bgra8888buff[j*fb->width + x];
+		destin=(u32*)&fb->bgra8888buff[j*fb->width + x];
 		for(i=x; i<w; i++)
 		{
-			*(u32*)pbgra = *(u32*)pInrgb;
-			pbgra++; pInrgb++;
+			*destin++ = *source++;
 		}
 	}
+	#endif
 	return RET_OK;
 }
 
