@@ -319,11 +319,21 @@ int XuiCanvasDrawText(XuiWindow *window,unsigned int x,unsigned int y,unsigned i
 */
 void UI_Push(XuiWindow *pWindow,RECTL *pRect)
 {
-	xui_fb_rect_push(pWindow->left,pWindow->top,pWindow->width,pWindow->height,(rgba_t*)pWindow->widget);
+	RECTL tRect;
+	if(pRect==NULL)
+	{
+		tRect.left = pWindow->left;
+		tRect.top= pWindow->top;
+		tRect.width= pWindow->width;
+		tRect.height= pWindow->height;
+		pRect = &tRect;
+	}
+	xui_rect_push(pRect,pWindow->wLen,pWindow->widget);
+//	xui_fb_rect_push(pWindow->left,pWindow->top,pWindow->width,pWindow->height,(rgba_t*)pWindow->widget);
 }
 
 
-void UI_CanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,u32 bg)
+void XuiCanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,u32 bg)
 {
 	u16 y,x;
 	u16 width,height;
@@ -494,27 +504,53 @@ void XuiShowWindow(XuiWindow *window,int show, int flag)
 }
 
 
-void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 rtg)
+void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int))	//(u32* pOut,int width,int height)
+{
+	free(pWindow->wBack);
+	if(pWindow->wBack == NULL)
+		pWindow->wBack = (u32*)malloc(pWindow->height * pWindow->wLen);
+	pFillColour(pWindow->wBack,pWindow->width,pWindow->height);
+}
+
+
+void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,u32 Color)
+{
+	u16 i,sx,w;
+	u32 *destin;
+	if(pRect->top >= pWindow->height) return;
+	
+	sx = pRect->left;
+	if(sx >= pWindow->width) return;
+	w = sx+width;
+	if(w > pWindow->width) w=pWindow->width;
+	
+	destin=&pWindow->widget[pRect->top*pWindow->wLen + pRect->left];
+	for(i=sx; i<w; i++)
+	{
+		*destin++ = Color;
+	}
+}
+
+void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 Color)
 {
 	u16 i,j,sx,sy,w,h;
-	u16 width,height;
+	u16 wLen;
 	u32* pWidget;
 	u32 *destin;
 	sx = pRect->left;
 	sy = pRect->top;
 	w = sx+pRect->width;
 	h = sy+pRect->height;
+	if(w > pWindow->width) w=pWindow->width;
+	if(h > pWindow->height) h=pWindow->height;
 	pWidget = pWindow->widget;
-	width	= pWindow->width;
-	height	= pWindow->height;
-	if(w > width) w=width;
-	if(h > height) h=height;
+	wLen	= pWindow->wLen;
 	for (j = sy; j < h; j++) 
 	{
-		destin=&pWidget[j*width + sx];
+		destin=&pWidget[j*wLen + sx];
 		for(i=sx; i<w; i++)
 		{
-			*destin++ = rtg;
+			*destin++ = Color;
 		}
 	}
 }
@@ -522,6 +558,7 @@ void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 rtg)
 void UI_SetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
 {
 	u16 i,j,sx,sy,w,h;
+	int wLen;
 	u32 *destin,*source;
 	sx = pRect->left;
 	sy = pRect->top;
@@ -529,10 +566,11 @@ void UI_SetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
 	h = sy+pRect->height;
 	if(w > pWindow->width) w=pWindow->width;
 	if(h > pWindow->height) h=pWindow->height;
+	wLen = pWindow->wLen;
 	source = (u32*)pRGB;
 	for (j = sy; j < h; j++) 
 	{
-		destin=&pWindow->widget[j*pWindow->width + sx];
+		destin=&pWindow->widget[j*wLen + sx];
 		for(i=sx; i<w; i++)
 		{
 			*destin++ = *source++;
@@ -543,6 +581,7 @@ void UI_SetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
 void UI_GetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
 {
 	u16 i,j,sx,sy,w,h;
+	int wLen;
 	u32 *destin,*source;
 	sx = pRect->left;
 	sy = pRect->top;
@@ -550,10 +589,11 @@ void UI_GetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
 	h = sy+pRect->height;
 	if(w > pWindow->width) w=pWindow->width;
 	if(h > pWindow->height) h=pWindow->height;
+	wLen = pWindow->wLen;
 	source = (u32*)pRGB;
 	for (j = sy; j < h; j++) 
 	{
-		destin=&pWindow->widget[j*pWindow->width + sx];
+		destin=&pWindow->widget[j*wLen + sx];
 		for(i=sx; i<w; i++)
 		{
 			*source++ = *destin++;

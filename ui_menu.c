@@ -274,16 +274,18 @@ void ShowMenuItem(void *pMenu,int index,int line,char *pOutShow)
 //输出数据:菜单执行结果
 //注:改变了 pWindow 需要重新show,没改变不用
 //---------------------------------------------------------------
-int APP_ShowProsseMenu(XuiWindow *pWindow)
+int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*))
 {
 	CMenuUITable *pStartMenuAdd=pMenuUiTable;
 	u32 event,ret=EVENT_NONE;
+	if(pShowItem==NULL) pShowItem=&ShowMenuItem;
+	API_GUI_SetTheme(pWindow,NULL);
 	while(pMenuUiTable)
 	{
 		//----------显示菜单---------------------
-		API_GUI_CreateWindow(pWindow,pMenuUiTable->pTitle,TOK,TCANCEL,1);
-		API_GUI_Menu(pWindow,pMenuUiTable->pItem,&ShowMenuItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
-		API_GUI_Show(pWindow);
+		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,1);
+		API_GUI_Menu(pMenuUiTable->pItem,pShowItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
+		API_GUI_Show();
 	//	pMenuUiTable->ShowState=_GUI_MENU_PROCESS;
 		//----------处理菜单----------------------
 		event=API_WaitEvent(pMenuUiTable->TimeOutMs,EVENT_UI,EVENT_NONE);	

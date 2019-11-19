@@ -31,7 +31,7 @@ typedef enum
 }UI_MENU_ADD_TYPE;
 extern void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,fMenuFun pFunc,const char *pFunTitle);
 
-extern int APP_ShowProsseMenu(XuiWindow *pWindow);
+extern int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*));
 
 
 #define GREATE_MENU_BY_STRUCT(pTitle,pMenuItem,TimeOutMs)	APP_CreateNewMenuByStruct(pTitle,sizeof(pMenuItem)/sizeof(pMenuItem[0]),pMenuItem,TimeOutMs)

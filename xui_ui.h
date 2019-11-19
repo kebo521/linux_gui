@@ -57,6 +57,18 @@ typedef struct {
 }gUi_def;
 extern gUi_def gUiDataAll;
 
+extern XuiWindow *XuiRootCanvas(void);
+extern XuiWindow *XuiStatusbarCanvas(void);
+extern XuiWindow *XuiCreateCanvas(XuiWindow *parent, unsigned int x, unsigned int y,unsigned int width, unsigned int height);
+extern void UI_Push(XuiWindow *pWindow,RECTL *pRect);
+extern void XuiCanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,u32 bg);
+extern void XuiDestroyWindow(XuiWindow *window);
+extern int XuiClearArea(XuiWindow *window, unsigned int x,unsigned int y, unsigned int width, unsigned int height);
+extern void XuiShowWindow(XuiWindow *window,int show, int flag);
+
+extern void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int));	//(u32* pOut,int width,int height)
+extern void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,u32 Color);
+extern void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 Color);
 
 
 typedef struct _API_UI	

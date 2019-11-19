@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
 		ApiFont.InitFontLib("./bin/ks.res");
 	
 		APP_FactoryMeun(pWindow,"Ó²¼þ²âÊÔ");
-		APP_ShowProsseMenu(pWindow);
+		APP_ShowProsseMenu(pWindow,NULL);
 
 		ApiFont.DeInitFontLib();
 		ApiEven.KillThread(NULL);
