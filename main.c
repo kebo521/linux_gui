@@ -128,6 +128,8 @@ int InitProcessPool(int noclose)
 		}
 	}
 	umask(0);	//子进程权限
+
+	/*
 	while(1) 
 	{//---守护进程-------
 		pid=fork();
@@ -144,6 +146,7 @@ int InitProcessPool(int noclose)
 		else break; //孙进程，跳出外面执行
 	} 
 	umask(0); //孙进程权限
+	*/
 	return 0;
 }
 
@@ -278,14 +281,15 @@ int main(int argc, char* argv[]) {
 //	"TSDEV=",
 	"STATUSBAR=24",
 	};
-	/*
+	
 	ret=InitProcessPool(0);
 	if(ret)
 	{
 		TRACE("->main InitProcessPool ret[%d]\r\n",ret);
 		return 1;
 	}
-	*/
+	//*/
+	/*
 	int shmid;  
 	TRACE("Create a shared memory Init\r\n");
     shmid=shmget(0xA019,sizeof(SdkApi),0666|IPC_CREAT);  
@@ -301,31 +305,26 @@ int main(int argc, char* argv[]) {
 	TRACE("shared memory[%X]segment\r\n",psdkAPI);
 	if(psdkAPI)
 		memcpy(psdkAPI,&SdkApi,sizeof(SdkApi));
-
-	TRACE("0Mask3[%d]\r\n",psdkAPI->Mask[3]);
-	ret=execl("./bin/app1",(char*)&SdkApi,(char*)0);
-	TRACE("1Mask3[%d]\r\n",psdkAPI->Mask[3]);
-	ret=execl("./bin/app2",(char*)&SdkApi,(char*)0);
-	TRACE("2Mask3[%d]\r\n",psdkAPI->Mask[3]);
-
 	
 	TRACE(" a execl [%d]\r\n",ret);
 	sleep(20);
 
-	
 	ret=shmdt(psdkAPI);
 	TRACE(" a shared memory shmdt[%d]\r\n",ret);
 	ret=shmctl(shmid,IPC_RMID,NULL);
 	TRACE(" a shared memory shmctl[%d]\r\n",ret);
+	*/
+
+	
 	XuiWindow* pWindow;
 		
 	ApiUI.open(sizeof(pHardMsg)/sizeof(pHardMsg[0]) ,pHardMsg);
-	if((pWindow=ApiUI.RootCanvas()) != NULL)
+	if((pWindow=XuiRootCanvas()) != NULL)
 	{
-		ApiFont.DisplaySysString(pWindow,0,0,TEXT_12,"0 yz131234&&*()_+~!@#$%^&*");
-		ApiFont.DisplaySysString(pWindow,0,TEXT_12,TEXT_16,"0 yz131234&&*()_+~!@#$%^&*");
-		ApiFont.DisplaySysString(pWindow,0,TEXT_12+TEXT_16,TEXT_24,"0 yz131234&&*()_+~!@#$%^&*");
-		ApiUI.ShowWindow(pWindow,1,0);
+		UI_DisplaySysEn(pWindow,0,0,TEXT_12,"0 yz131234&&*()_+~!@#$%^&*");
+		UI_DisplaySysEn(pWindow,0,TEXT_12,TEXT_16,"0 yz131234&&*()_+~!@#$%^&*");
+		UI_DisplaySysEn(pWindow,0,TEXT_12+TEXT_16,TEXT_24,"0 yz131234&&*()_+~!@#$%^&*");
+		UI_Push(pWindow,NULL);
 		sleep(5);
 		
 		ApiEven.Init(0,0);

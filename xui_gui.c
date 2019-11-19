@@ -22,24 +22,26 @@ static GUI_THEME_MSG tGuiThemeMsg={0};
 void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme)
 {
 	tGuiThemeMsg.hfont = FONT_SIZE;
-	tGuiThemeMsg.hn = 8;
-	tGuiThemeMsg.hmc = pWindow->height/(1+8);
+	tGuiThemeMsg.hn = 8+1;
+	do
+	{//------自动计算每行高度-------
+		tGuiThemeMsg.hn--;
+		tGuiThemeMsg.hmc = pWindow->height/(1 + tGuiThemeMsg.hn);
+	}
+	while(tGuiThemeMsg.hmc < tGuiThemeMsg.hfont);
+	
 	tGuiThemeMsg.hcont = tGuiThemeMsg.hmc*8;
 	tGuiThemeMsg.htitle = pWindow->height - tGuiThemeMsg.hcont;
 	tGuiThemeMsg.width = pWindow->width;
-	//tGuiThemeMsg.titleBclr = UI_TITLE_COLOUR;
 	tGuiThemeMsg.titleFclr = FONT_TITLE_COLOUR;
-
-	//tGuiThemeMsg.contBclr = RGB565_TIEM_ICON;
 	tGuiThemeMsg.contFclr = RGB565_TIEM_FONT;
-
 	tGuiThemeMsg.pWindow = pWindow;
 }
 
-void API_FillMenuBack(u32* widget,int w,int h)
+void API_FillMenuBack(A_RGB* widget,int w,int h)
 {
-	u32 colour;
-	u32 *pEnd;
+	A_RGB colour;
+	A_RGB *pEnd;
 	int item;
 	colour=UI_TITLE_COLOUR;
 	//--------------标题空间-------------------------
@@ -63,10 +65,10 @@ void API_FillMenuBack(u32* widget,int w,int h)
 	}
 }
 
-void API_FillShowBack(u32* widget,int w,int h)
+void API_FillShowBack(A_RGB* widget,int w,int h)
 {
-	u32 colour;
-	u32 *pEnd;
+	A_RGB colour;
+	A_RGB *pEnd;
 	colour=UI_TITLE_COLOUR;
 	//--------------标题空间-------------------------
 	pEnd = widget+ (w*tGuiThemeMsg.htitle);
@@ -83,7 +85,7 @@ void API_FillShowBack(u32* widget,int w,int h)
 	}
 }
 //=================================================================================
-void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int))	// 'M' = menu , 'C'=cont
+void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int))	// 'M' = menu , 'C'=cont
 {
 	if(pWindow==NULL) return;
 	if(pFillColour)
@@ -96,11 +98,11 @@ void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int))	//
 	}
 	{//----将背景色全拷贝到显示区-------
 		int max;
-		u32 *destin,*source;
+		A_RGB *destin,*source;
 		source = tGuiThemeMsg.pWindow->wBack;
 		if(source == NULL) return;
 		destin = tGuiThemeMsg.pWindow->widget;
-		max= tGuiThemeMsg.pWindow->height*tGuiThemeMsg.pWindow->wLen;
+		max= tGuiThemeMsg.pWindow->height*tGuiThemeMsg.pWindow->width;
 		while(max--)
 			*destin++ = *source++;
 	}
@@ -204,7 +206,7 @@ void Conv_TmoneyToDmoney(char* pOutdMoney,char* pIntMoney)
 void DisplayPaintEnd(XuiWindow *pWindow)
 {
 	UI_Push(pWindow,NULL);
-	//return xui_fb_rect_push(pWindow->left,pWindow->top,pWindow->width,pWindow->height,(rgba_t*)pWindow->widget);
+	//return xui_fb_rect_push(pWindow->left,pWindow->top,pWindow->width,pWindow->height,pWindow->widget);
 }
 
 
@@ -266,7 +268,7 @@ void UI_DisplayBitMapEND(void)
 
 
 //================================画框=======================================================
-void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,u32 Color)
+void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,A_RGB Color)
 {
 	RECTL fTrg;
 	fTrg.left = pRect->left; fTrg.top = pRect->top;

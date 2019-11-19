@@ -45,13 +45,13 @@
 
 void UI_DisplaySysEn(XuiWindow *pWindow,int x,int y,int type,char*pMsgEn) 
 {
-	u32 *pbgra;
+	A_RGB *pbgra;
 	u8*	pbit;
 	u8	i,j,jn;	//readLen,
 	u8	cH,cW,cZ;
 	u16 jb;
 	u16 width,height;
-	u32* pWidget;
+	A_RGB* pWidget;
 
 	#ifdef SYS_FUNT_12EN
 	if(type == TEXT_12)
@@ -130,7 +130,6 @@ void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms)
 }
 
 
-#if(1)
 DisRES_table resDisTable={0};
 
 int InitExtResLib(char *pfile)
@@ -528,25 +527,25 @@ int Font_Get_en_addr(u8 a)
 		return -1;      //·ÇÓ¢ÎÄ×ÖÄ¸
 	return resDisTable.fn[0].Offset + ((a-0x20) * resDisTable.resFd.reqLen_en);
 }
-static rgba_t uiFontColor={0xff,0xff,0xff,0},uiBgColor={0,0,0,0};
+static A_RGB uiFontColor=0x00FFFFFF,uiBgColor=0x00000000;
 
-void UI_SetFontColor(u32 fgColor,u32 bgColor)
+void UI_SetFontColor(A_RGB fgColor,A_RGB bgColor)
 {
-	*(u32*)&uiFontColor= fgColor;
-	*(u32*)&uiBgColor= bgColor;
+	uiFontColor= fgColor;
+	uiBgColor= bgColor;
 	//LCD_SetColorRGB565(fgColor,bgColor);
 }
 
 int UI_DisplayFont(XuiWindow *pWindow,POINT* prclTrg, u8* hzData)
 {
-	u32 *pbgra;
+	A_RGB *pbgra;
+	A_RGB* pWidget;
 	u8 *s_dots;
     RECTL rect;
 	int  offset;
 	u8  i,j;	//readLen,
 	u8  wMax,wi,db;	//readLen,
 	u16 width,height;
-	u32* pWidget;
 	
     if(resDisTable.pbFont == NULL)
         return 0;
@@ -595,11 +594,13 @@ int UI_DisplayFont(XuiWindow *pWindow,POINT* prclTrg, u8* hzData)
 				{
 					*pbgra = *(u32*)&uiFontColor;
 				}
+				/*
 				else
 				{
-					if(uiBgColor.a == 0)
-						*pbgra = *(u32*)&uiBgColor;
+					if(!(uiBgColor&0x00FFFFFF))
+						*pbgra = uiBgColor;
 				}
+				*/
 				pbgra++; db<<=1;
 			}
         }
@@ -703,5 +704,4 @@ const API_FONT_Def ApiFont={
 	UI_DrawRectString,
 };
 
-#endif
 

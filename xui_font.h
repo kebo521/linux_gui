@@ -24,8 +24,12 @@
 #define XUI_FONT_H
 
 
+extern void UI_DisplaySysEn(XuiWindow *pWindow,int x,int y,int type,char*pMsgEn);
+extern void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms);
+
+
+
 #define FONT_SIZE    			(24)    
-#define DOTS_BYTES    			((FONT_SIZE * FONT_SIZE / 8))
 
 //=============================================ks文件定义========================================================
 typedef struct 										// APP安装包文件头
@@ -121,10 +125,8 @@ extern DisRES_table resDisTable;
 
 extern int InitExtResLib(char *pfile);
 extern void DeInitExtResLib(void);
-extern void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms);
-
 //==================显示中文，需要字库ks.res支持===================================
-extern void UI_SetFontColor(u32 fgColor,u32 bgColor);
+extern void UI_SetFontColor(A_RGB fgColor,A_RGB bgColor);
 extern int UI_DisplayFont(XuiWindow *pWindow,POINT* prclTrg, u8* hzData);
 extern int UI_DrawLineString(XuiWindow *pWindow,POINT* prclTrg,const char *src);
 extern int UI_DrawRectString(XuiWindow *pWindow,RECTL* pRect,const char *src);
@@ -137,7 +139,7 @@ typedef struct
 	
 	int (*InitFontLib)(char*);		//(char *pfile)
 	void (*DeInitFontLib)(void);	//
-	void (*SetFontColor)(u32,u32);	//(u32 fgColor,u32 bgColor) RGB_CURR
+	void (*SetFontColor)(A_RGB,A_RGB);	//(u32 fgColor,u32 bgColor) RGB_CURR
 	int (*DisplayFont)(XuiWindow*,POINT*,u8*);	//(pWindow,POINT* prclTrg, u8* hzData)
 	int (*DrawLineString)(XuiWindow*,POINT*,const char*);//Display single line of text, no automatic line breaks
 	int (*DrawRectString)(XuiWindow*,RECTL*,const char*);//The specified area displays text and wraps automatically

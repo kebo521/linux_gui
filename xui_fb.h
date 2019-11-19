@@ -73,7 +73,7 @@ extern int xui_fb_stroke_rect(int x, int y, int w, int h,const rgba_t* rgba);
 //extern int xui_fb_close(screen_buffer* fb);
 extern int xui_fb_show_rect(int x, int y, int w, int h,rgba_t* rgba);
 extern int xui_fb_rect_push(int x, int y, int w, int h,rgba_t* pInrgb);
-extern int xui_rect_push(RECTL* pRect,int mLen,u32* pInrgb);
+extern int xui_rect_push(RECTL* pRect,int mWidth,u32* pInrgb);
 
 
 #endif /*LINUX_FB_H*/

@@ -165,10 +165,9 @@ int open_screen(const char* filename,XuiWindow *pHardWindow) //XuiWindow *pHardW
 	fb_screen.openFlagOK=1;
 	if(pHardWindow)
 	{
-		pHardWindow->wLen = fix.line_length;
 		pHardWindow->width= fb_screen.width;
 		pHardWindow->height= fb_screen.height;
-		pHardWindow->widget = (u32*)fb_screen.buffer;
+		pHardWindow->widget = (A_RGB*)fb_screen.buffer;
 	}
 	return 1;
 }
@@ -594,43 +593,41 @@ int xui_fb_rect_push(int x, int y, int w, int h,rgba_t* pInrgb)
 }
 
 
-int xui_rect_push(RECTL* pRect,int mLen,u32* pInrgb) 
+int xui_rect_push(RECTL* pRect,int mWidth,A_RGB* pInrgb) 
 {
 	u16 i,j,x,y,w,h;
-	u32 wline;
-	u32 *destin,*source;
+	A_RGB *destin,*source;
 	#ifdef DISPLAY_HORIZONTAL_SCREEN
+	
 	if(pRect==NULL) return -1;
-	destin=(u32*)fb_screen.bgra8888buff;
+	destin=(A_RGB*)fb_screen.bgra8888buff;
 	x = pRect->left;
 	y = pRect->top;
 	w =x+ pRect->width;
 	h =y+ pRect->height;
-	wline = fb_screen.width;
 	
 	j = h;
 	while((j--) > y) 
 	{
-		source=&pInrgb[(h-j)*mLen + x];
+		source=&pInrgb[(h-j)*mWidth + x];
 		for(i=x; i<w; i++)
 		{
-			destin[i*wline +j] = *source++;
+			destin[i*fb_screen.width +j] = *source++;
 		}
 	}
-	#else
-	u32 *pStarD;
+	#else	//-----------------------------------------------------------
+	
+	A_RGB *pStarD;
 	if(pRect==NULL) return -1;
-	pStarD = (u32*)fb_screen.bgra8888buff;
+	pStarD = (A_RGB*)fb_screen.bgra8888buff;
 	x = pRect->left;
 	y = pRect->top;
 	w =x+ pRect->width;
 	h =y+ pRect->height;
-	wline = fb_screen.width;
-	
 	for (j = y; j < h; j++) 
 	{
-		destin=&pStarD[j*wline + x];
-		source=&pInrgb[j*mLen + x];
+		destin=&pStarD[j*fb_screen.width + x];
+		source=&pInrgb[j*mWidth + x];
 		for(i=x; i<w; i++)
 		{
 			*destin++ = *source++;

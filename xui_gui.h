@@ -69,7 +69,6 @@ typedef enum
 
 #define FONT_SIZE    			(24)    
 #define HZ_INDEX(hz)    		((hz[0] - 0xa1) * 94 + (hz[1] - 0xa1))
-#define DOTS_BYTES    			((FONT_SIZE * FONT_SIZE / 8))
 
 #define RGB565_WITHE		RGB_CURR(0xff,0xff,0xff)	//0x0000FFFF
 #define RGB565_BLACK		RGB_CURR(0x00,0x00,0x00)	//0x00000000
@@ -248,18 +247,18 @@ typedef struct {
 	XuiWindow *pWindow;
 	u16		hfont,hn,hmc;			//字体高度，内容数，菜单项高度
 	u16		width,htitle,hcont;		//菜单宽度，标题高度，内容高度
-	u32		titleFclr,contFclr;	//标题背景色，标题字体色
-//	u32		titleBclr,contBclr;	//内容背景色，内容字体色
-	//u32		cont1clr,cont2clr; 	 //选项背景色，选项字体色
-	void (*pFillColour)(u32*,int,int);
+	A_RGB	titleFclr,contFclr;	//标题背景色，标题字体色
+//	A_RGB		titleBclr,contBclr;	//内容背景色，内容字体色
+	//A_RGB		cont1clr,cont2clr; 	 //选项背景色，选项字体色
+	void (*pFillColour)(A_RGB*,int,int);
 }GUI_THEME_MSG;
 
 extern void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme);
 
-extern void API_FillMenuBack(u32* widget,int w,int h);
-extern void API_FillShowBack(u32* widget,int w,int h);
+extern void API_FillMenuBack(A_RGB* widget,int w,int h);
+extern void API_FillShowBack(A_RGB* widget,int w,int h);
 
-extern void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int));
+extern void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int));
 
 extern int APP_WaitUiEvent(int tTimeOutMS);
 //=================================================================================
@@ -269,7 +268,7 @@ extern int APP_WaitUiEvent(int tTimeOutMS);
 //extern void UI_DisplayBitMapEND(void);
 
 //==================================================================================
-extern void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,u32 Color);
+extern void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,A_RGB Color);
 extern void API_GUI_InputEdit(XuiWindow *pWindow,char* pStrDef,int tMaxLen,u32 Way,Fun_ShowNum pShow);
 
 
@@ -334,7 +333,6 @@ extern int   APP_GUI_Menu(char* pTitle,int stratIndex,int tNum,int tCurInx,char*
 
 extern void APP_ShowChangeInfo(char *pOriginal,int Originalsize,const char* format,...);
 
-//extern void API_GUI_Draw565QRcode(RECTL* prclTrg,char *pInMsg,u32 fgColor, u32 bgColor);
 
 /**
  * 显示GUI界面, 开始交互

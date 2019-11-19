@@ -12,6 +12,7 @@ typedef struct{
 }gUIrgba;
 #define	RGB_CURR(r,g,b)		((r*0x10000)|(g*0x100)|b)	//(u32)(gUIrgba)(b,g,r,0xff))
 
+typedef unsigned int  			A_RGB;		// <= RGB_CURR
 
 /**
  * GUIÖ§³ÖµÄÍ¼Ïñ¸ñÊ½¶¨Òå
@@ -32,14 +33,12 @@ typedef struct _XuiWindow{
 	struct _XuiWindow *pNext;		//×Ó´°¿Ú....
 	
 	unsigned short left,top,width,height;
-	unsigned int wLen;		//Ã¿Ò»ÐÐµÄbety Êý
 	
 	unsigned short key;		//å…³è”æŒ‰é”®å€¼
 	unsigned short type;	//Window çª—å£ç±»åž‹ï¼Œè¯¦è§XuiWindowType
 	
-	
-	unsigned int* wBack;	//Window ±³¾°É«£¬ÎÞ ¿É½èÓÃ¸´´°¿Ú»¹Ô­
-	unsigned int* widget;	//ÓÃ½á¹¹ÌåºóÃæµÄ¿Õ¼ä²»ÐèÒªÊÍ·Å£¬Window å…³è”ç”»å¸ƒæŒ‡é’ˆ
+	A_RGB* 		wBack;	//Window ±³¾°É«£¬ÎÞ ¿É½èÓÃ¸´´°¿Ú»¹Ô­
+	A_RGB* 		widget;	//ÓÃ½á¹¹ÌåºóÃæµÄ¿Õ¼ä²»ÐèÒªÊÍ·Å£¬Window å…³è”ç”»å¸ƒæŒ‡é’ˆ
 } XuiWindow;
 //extern XuiWindow UI_screen;
 
@@ -61,14 +60,14 @@ extern XuiWindow *XuiRootCanvas(void);
 extern XuiWindow *XuiStatusbarCanvas(void);
 extern XuiWindow *XuiCreateCanvas(XuiWindow *parent, unsigned int x, unsigned int y,unsigned int width, unsigned int height);
 extern void UI_Push(XuiWindow *pWindow,RECTL *pRect);
-extern void XuiCanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,u32 bg);
+extern void XuiCanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,A_RGB bg);
 extern void XuiDestroyWindow(XuiWindow *window);
 extern int XuiClearArea(XuiWindow *window, unsigned int x,unsigned int y, unsigned int width, unsigned int height);
 extern void XuiShowWindow(XuiWindow *window,int show, int flag);
 
-extern void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int));	//(u32* pOut,int width,int height)
-extern void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,u32 Color);
-extern void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 Color);
+extern void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int));	//(u32* pOut,int width,int height)
+extern void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,A_RGB Color);
+extern void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,A_RGB Color);
 
 
 typedef struct _API_UI	
@@ -84,11 +83,11 @@ typedef struct _API_UI
 
 	void (*Push)(XuiWindow *,RECTL*);	//Cache area is pushed to video memory,(RECTL==NULL,Show full area)
 
-	void (*FillRectSingLe)(XuiWindow *,RECTL*,u32);	//(xywh,RGB_CURR(r,g,b))
-	void (*SetRectBuff)(XuiWindow *,RECTL*,gUIrgba*);	//(xywh,gUIrgba...)
-	void (*GetRectBuff)(XuiWindow *,RECTL*,gUIrgba*); //(xywh,gUIrgba...)
+	void (*FillRectSingLe)(XuiWindow *,RECTL*,A_RGB);	//(xywh,RGB_CURR(r,g,b))
+	void (*SetRectBuff)(XuiWindow *,RECTL*,A_RGB*);	//(xywh,gUIrgba...)
+	void (*GetRectBuff)(XuiWindow *,RECTL*,A_RGB*); //(xywh,gUIrgba...)
 
-	void (*ShowQrCode)(XuiWindow *,RECTL* ,const char*,u32);	//(xywh,"Text",RGB_CURR(r,g,b))
+	void (*ShowQrCode)(XuiWindow *,RECTL* ,const char*,A_RGB);	//(xywh,"Text",RGB_CURR(r,g,b))
 	int (*ShowPictureFile)(XuiWindow *,RECTL *,const char *);
 	void (*ShowBottomProgress)(XuiWindow *,int);	//ratio (0~100)
 	void (*ShowParMiddleSlide)(XuiWindow *,int); //ratio (0~100)

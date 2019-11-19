@@ -224,15 +224,14 @@ XuiWindow *XuiRootCanvas(void)
 	int nWindLen;
 	width=SCREEN_WIDTH;
 	height= SCREEN_HEIGT-gUiDataAll.iStatusbar;
-	nWindLen =sizeof(XuiWindow) +  (height*width*(gUiDataAll.tHardWindow.wLen/gUiDataAll.tHardWindow.width));
+	nWindLen =sizeof(XuiWindow) +  (height*width)*sizeof(A_RGB);
 	Window = (XuiWindow *)malloc(nWindLen);
 	u32_memset((u32*)&Window,0x0000000,nWindLen/4);
-	Window->widget = (u32*)((u8*)Window) + sizeof(XuiWindow);	
+	Window->widget = (A_RGB*)((u8*)Window) + sizeof(XuiWindow);	
 	Window->left=gUiDataAll.left;
 	Window->top=gUiDataAll.top+gUiDataAll.iStatusbar;
 	Window->width = width;
 	Window->height = height;
-	Window->wLen=width*(gUiDataAll.tHardWindow.wLen/gUiDataAll.tHardWindow.width);	
 	return Window;
 }
 
@@ -249,15 +248,14 @@ XuiWindow *XuiStatusbarCanvas(void)
 	}
 	width=SCREEN_WIDTH;
 	height= gUiDataAll.iStatusbar;
-	nWindLen =sizeof(XuiWindow) +  (height*width*(gUiDataAll.tHardWindow.wLen/gUiDataAll.tHardWindow.width));
+	nWindLen =sizeof(XuiWindow) +  (height*width)*sizeof(A_RGB);
 	Window = (XuiWindow *)malloc(nWindLen);
 	u32_memset((u32*)&Window,0x0000000,nWindLen/4);
-	Window->widget = (u32*)((u8*)Window) + sizeof(XuiWindow);	
+	Window->widget = (A_RGB*)((u8*)Window) + sizeof(XuiWindow);	
 	Window->left=gUiDataAll.left;
 	Window->top=gUiDataAll.top;
 	Window->width = width;
 	Window->height = height;
-	Window->wLen=width*(gUiDataAll.tHardWindow.wLen/gUiDataAll.tHardWindow.width);	
 	return Window;
 }
 
@@ -269,16 +267,15 @@ XuiWindow *XuiCreateCanvas(XuiWindow *parent, unsigned int x, unsigned int y,uns
 	if((x+width)> parent->width || (y+height)> parent->height)
 		return NULL;
 	
-	nWindLen =sizeof(XuiWindow) + (height*width*(parent->wLen/parent->width));
+	nWindLen =sizeof(XuiWindow) + (height*width)*sizeof(A_RGB);
 
 	Window = (XuiWindow *)malloc(nWindLen);
 	u32_memset((u32*)&Window,0x0000000,nWindLen/4);
-	Window->widget = (u32*)((u8*)Window) + sizeof(XuiWindow);	
+	Window->widget = (A_RGB*)((u8*)Window) + sizeof(XuiWindow);	
 	Window->left=parent->left+ x;
 	Window->top =parent->top + y;
 	Window->width = width;
 	Window->height = height;
-	Window->wLen=Window->width * parent->wLen/parent->width;
 	Window->pChild = parent;
 
 	if(parent->pParent==NULL)
@@ -328,20 +325,20 @@ void UI_Push(XuiWindow *pWindow,RECTL *pRect)
 		tRect.height= pWindow->height;
 		pRect = &tRect;
 	}
-	xui_rect_push(pRect,pWindow->wLen,pWindow->widget);
+	xui_rect_push(pRect,pWindow->width,pWindow->widget);
 //	xui_fb_rect_push(pWindow->left,pWindow->top,pWindow->width,pWindow->height,(rgba_t*)pWindow->widget);
 }
 
 
-void XuiCanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,u32 bg)
+void XuiCanvasSetBackground(XuiWindow *pWindow,int bgstyle,void *img,A_RGB bg)
 {
 	u16 y,x;
 	u16 width,height;
-	u32* pWidget;
+	A_RGB* pWidget;
 	width	= pWindow->width;
 	height	= pWindow->height;
 	free(pWindow->wBack);
-	pWidget = (u32*)malloc(height * pWindow->wLen);
+	pWidget = (A_RGB*)malloc((height * width)*sizeof(A_RGB));
 	if(img)
 	{
 
@@ -384,7 +381,7 @@ void XuiDestroyWindow(XuiWindow *window)
 	{	
 		FreeParentWindow(window->pParent);
 	}
-	if(window->pChild!=NULL)
+	if(window->pChild)
 	{
 		pParent=window->pChild;
 		if(pParent->pParent == window)
@@ -408,8 +405,7 @@ void XuiDestroyWindow(XuiWindow *window)
 		tRect.width= window->width;
 		tRect.height= window->height;
 		pParent=window->pChild;
-		xui_rect_push(&tRect,pParent->wLen,pParent->widget);
-		free(window->widget);
+		xui_rect_push(&tRect,pParent->width,pParent->widget);
 	}
 	else if(window->wBack)
 	{
@@ -418,7 +414,7 @@ void XuiDestroyWindow(XuiWindow *window)
 		tRect.top=	window->top;
 		tRect.width= window->width;
 		tRect.height= window->height;
-		xui_rect_push(&tRect,window->wLen,window->wBack);
+		xui_rect_push(&tRect,window->width,window->wBack);
 	}
 	free(window->wBack);
 	free(window);
@@ -427,21 +423,21 @@ void XuiDestroyWindow(XuiWindow *window)
 int XuiClearArea(XuiWindow *window, unsigned int x,unsigned int y, unsigned int width, unsigned int height)
 {
 	u16 i,j,w,h;
-	u16 mLen,mLine;
-	u32 *pBack,*pWidget;
-	u32 *destin,*source;
+	u16 mWidth,mChildw;
+	A_RGB *pBack,*pWidget;
+	A_RGB *destin,*source;
 	
 	w = x + width;
 	h = y + height;
-	mLen = window->wLen;
+	mWidth = window->width;
 	pWidget = window->widget;
 	if(window->wBack)
 	{
 		pBack = window->wBack;
 		for (j = y; j < h; j++) 
 		{
-			source=&pBack[j*mLen + x];
-			destin=&pWidget[j*mLen + x];
+			source=&pBack[j*mWidth + x];
+			destin=&pWidget[j*mWidth + x];
 			for(i=x; i<w; i++)
 			{
 				*destin++ = *source++;
@@ -454,11 +450,11 @@ int XuiClearArea(XuiWindow *window, unsigned int x,unsigned int y, unsigned int 
 		xOff = window->left - window->pChild->left;
 		yOff = window->top  - window->pChild->top;;
 		pBack = window->pChild->widget;
-		mLine = window->pChild->wLen;
+		mChildw = window->pChild->width;
 		for (j = y; j < h; j++) 
 		{
-			source=&pBack[(yOff+j)*mLine + xOff+x];
-			destin=&pWidget[j*mLen + x];
+			source=&pBack[(yOff+j)*mChildw + xOff+x];
+			destin=&pWidget[j*mWidth + x];
 			for(i=x; i<w; i++)
 			{
 				*destin++ = *source++;
@@ -473,7 +469,7 @@ int XuiClearArea(XuiWindow *window, unsigned int x,unsigned int y, unsigned int 
 		tRect.top=	window->top + y;
 		tRect.width= width;
 		tRect.height= height;
-		xui_rect_push(&tRect,window->wLen,window->widget);
+		xui_rect_push(&tRect,window->width,window->widget);
 	}
 	return 0;
 }
@@ -488,35 +484,35 @@ void XuiShowWindow(XuiWindow *window,int show, int flag)
 	tRect.height= window->height;
 	if(show == 1)
 	{
-		xui_rect_push(&tRect,window->wLen,window->widget);
+		xui_rect_push(&tRect,window->width,window->widget);
 	}
 	else
 	{
 		if(window->wBack)
 		{
-			xui_rect_push(&tRect,window->wLen,window->wBack);
+			xui_rect_push(&tRect,window->width,window->wBack);
 		}
 		else if(window->pChild)
 		{
-			xui_rect_push(&tRect,window->pChild->wLen,window->pChild->widget);
+			xui_rect_push(&tRect,window->pChild->width,window->pChild->widget);
 		}
 	}
 }
 
 
-void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(u32*,int,int))	//(u32* pOut,int width,int height)
+void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int))	//(u32* pOut,int width,int height)
 {
 	free(pWindow->wBack);
 	if(pWindow->wBack == NULL)
-		pWindow->wBack = (u32*)malloc(pWindow->height * pWindow->wLen);
+		pWindow->wBack = (A_RGB*)malloc(pWindow->height * pWindow->width);
 	pFillColour(pWindow->wBack,pWindow->width,pWindow->height);
 }
 
 
-void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,u32 Color)
+void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,A_RGB Color)
 {
 	u16 i,sx,w;
-	u32 *destin;
+	A_RGB *destin;
 	if(pRect->top >= pWindow->height) return;
 	
 	sx = pRect->left;
@@ -524,30 +520,31 @@ void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,u32 Color)
 	w = sx+width;
 	if(w > pWindow->width) w=pWindow->width;
 	
-	destin=&pWindow->widget[pRect->top*pWindow->wLen + pRect->left];
+	destin=&pWindow->widget[pRect->top*pWindow->width + pRect->left];
 	for(i=sx; i<w; i++)
 	{
 		*destin++ = Color;
 	}
 }
 
-void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 Color)
+void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,A_RGB Color)
 {
 	u16 i,j,sx,sy,w,h;
-	u16 wLen;
-	u32* pWidget;
-	u32 *destin;
+	u16 mWidth;
+	A_RGB* pWidget;
+	A_RGB *destin;
 	sx = pRect->left;
 	sy = pRect->top;
-	w = sx+pRect->width;
 	h = sy+pRect->height;
-	if(w > pWindow->width) w=pWindow->width;
+	mWidth	= pWindow->width;
+	w = sx+mWidth;
+	if(w > mWidth) w=mWidth;
 	if(h > pWindow->height) h=pWindow->height;
 	pWidget = pWindow->widget;
-	wLen	= pWindow->wLen;
+	
 	for (j = sy; j < h; j++) 
 	{
-		destin=&pWidget[j*wLen + sx];
+		destin=&pWidget[j*mWidth + sx];
 		for(i=sx; i<w; i++)
 		{
 			*destin++ = Color;
@@ -555,48 +552,48 @@ void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,u32 Color)
 	}
 }
 
-void UI_SetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
+void UI_SetRectBuff(XuiWindow *pWindow,RECTL *pRect,A_RGB *pRGB)
 {
 	u16 i,j,sx,sy,w,h;
-	int wLen;
-	u32 *destin,*source;
+	int mWidth;
+	A_RGB *destin;
 	sx = pRect->left;
 	sy = pRect->top;
-	w = sx+pRect->width;
+	
+	mWidth = pWindow->width;
+	w = sx+mWidth;
+	if(w > mWidth) w=mWidth;
 	h = sy+pRect->height;
-	if(w > pWindow->width) w=pWindow->width;
 	if(h > pWindow->height) h=pWindow->height;
-	wLen = pWindow->wLen;
-	source = (u32*)pRGB;
+	
 	for (j = sy; j < h; j++) 
 	{
-		destin=&pWindow->widget[j*wLen + sx];
+		destin=&pWindow->widget[j*mWidth + sx];
 		for(i=sx; i<w; i++)
 		{
-			*destin++ = *source++;
+			*destin++ = *pRGB++;
 		}
 	}
 }
 
-void UI_GetRectBuff(XuiWindow *pWindow,RECTL *pRect,gUIrgba *pRGB)
+void UI_GetRectBuff(XuiWindow *pWindow,RECTL *pRect,A_RGB *pRGB)
 {
 	u16 i,j,sx,sy,w,h;
-	int wLen;
-	u32 *destin,*source;
+	int mWidth;
+	A_RGB *destin;
 	sx = pRect->left;
 	sy = pRect->top;
-	w = sx+pRect->width;
+	mWidth = pWindow->width;
+	w = sx+mWidth;
+	if(w > mWidth) w=mWidth;
 	h = sy+pRect->height;
-	if(w > pWindow->width) w=pWindow->width;
 	if(h > pWindow->height) h=pWindow->height;
-	wLen = pWindow->wLen;
-	source = (u32*)pRGB;
 	for (j = sy; j < h; j++) 
 	{
-		destin=&pWindow->widget[j*wLen + sx];
+		destin=&pWindow->widget[j*mWidth + sx];
 		for(i=sx; i<w; i++)
 		{
-			*source++ = *destin++;
+			*pRGB++ = *destin++;
 		}
 	}
 }
@@ -675,17 +672,17 @@ void UI_ShowParMiddleSlide(XuiWindow *pWindow,int ratio)
 }
 
 
-void UI_ShowQrCode(XuiWindow *pWindow,RECTL* pRect,const char* pInfo,u32 Color)
+void UI_ShowQrCode(XuiWindow *pWindow,RECTL* pRect,const char* pInfo,A_RGB Color)
 {
 	IMAGE image;
 	if(0==Lib_QrCodeImg(&image,pInfo,FALSE))
 	{
 		RECTL oImage;
 		u8 *pByte;
-		u32 *pbgra;
+		A_RGB *pbgra;
 		u16 x,y,ix,mx,iy,my;
-		u16 wLen;//height,width,
-		u32 *pWidget;
+		u16 width;//height,width,
+		A_RGB *pWidget;
 		//RECTL tRect;
 		//----保持长宽比，按最小宽度放大--------------
 		mx = MIN(pRect->width,pRect->height)/image.w;
@@ -704,7 +701,7 @@ void UI_ShowQrCode(XuiWindow *pWindow,RECTL* pRect,const char* pInfo,u32 Color)
 
 	//	width	= pWindow->width;
 	//	height	= pWindow->height;
-		wLen = pWindow->wLen;
+		width = pWindow->width;
 		pWidget = pWindow->widget;
 		for(x=0 ;x<image.w ; x++)
 		{
@@ -715,7 +712,7 @@ void UI_ShowQrCode(XuiWindow *pWindow,RECTL* pRect,const char* pInfo,u32 Color)
 				{
 					for(iy=0;iy<my;iy++)	
 					{
-						pbgra=&pWidget[(oImage.top + y*my+iy)*wLen + oImage.left + x*mx];
+						pbgra=&pWidget[(oImage.top + y*my+iy)*width + oImage.left + x*mx];
 						for(ix=0;ix<mx;ix++)
 						{
 							*pbgra++ = Color;
