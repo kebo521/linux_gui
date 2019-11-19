@@ -44,6 +44,7 @@ typedef struct {
 		pixel_rgb565_t *rgb565buff;
 		pixel_bgra8888_t *bgra8888buff;
 		unsigned long *u32add;	//Window 关联画布指针
+		A_RGB *pARGB;
 	};
 }screen_buffer;
 
@@ -73,7 +74,7 @@ extern int xui_fb_stroke_rect(int x, int y, int w, int h,const rgba_t* rgba);
 //extern int xui_fb_close(screen_buffer* fb);
 extern int xui_fb_show_rect(int x, int y, int w, int h,rgba_t* rgba);
 extern int xui_fb_rect_push(int x, int y, int w, int h,rgba_t* pInrgb);
-extern int xui_rect_push(RECTL* pRect,int mWidth,u32* pInrgb);
+extern int xui_fb_push(XuiWindow *window,RECTL* pRect,A_RGB* pInrgb);
 
 
 #endif /*LINUX_FB_H*/

@@ -272,7 +272,7 @@ int execve(const char *path, char *const argv[], char *const envp[]);
 */
 
 int main(int argc, char* argv[]) {
-	int ret;
+//	int ret;
 	
 	char *pHardMsg[]={
 	"FB=/dev/fb0",
@@ -281,7 +281,7 @@ int main(int argc, char* argv[]) {
 //	"TSDEV=",
 	"STATUSBAR=24",
 	};
-	
+	/*
 	ret=InitProcessPool(0);
 	if(ret)
 	{
@@ -318,14 +318,25 @@ int main(int argc, char* argv[]) {
 	
 	XuiWindow* pWindow;
 		
-	ApiUI.open(sizeof(pHardMsg)/sizeof(pHardMsg[0]) ,pHardMsg);
+	XuiOpen(sizeof(pHardMsg)/sizeof(pHardMsg[0]) ,pHardMsg);
 	if((pWindow=XuiRootCanvas()) != NULL)
 	{
 		UI_DisplaySysEn(pWindow,0,0,TEXT_12,"0 yz131234&&*()_+~!@#$%^&*");
 		UI_DisplaySysEn(pWindow,0,TEXT_12,TEXT_16,"0 yz131234&&*()_+~!@#$%^&*");
 		UI_DisplaySysEn(pWindow,0,TEXT_12+TEXT_16,TEXT_24,"0 yz131234&&*()_+~!@#$%^&*");
 		UI_Push(pWindow,NULL);
-		sleep(5);
+		sleep(2);
+		API_GUI_SetTheme(pWindow,NULL);
+		
+		
+
+		API_GUI_CreateWindow(NULL,TOK,TCANCEL,GUI_MENU_LINE);
+		API_GUI_Show();
+		sleep(1);
+		API_GUI_CreateWindow("ÎÒÔÚÄÄ",TOK,TCANCEL,GUI_SHOW_MSG);
+		API_GUI_Show();
+		sleep(1);
+
 		
 		ApiEven.Init(0,0);
 		
@@ -342,8 +353,9 @@ int main(int argc, char* argv[]) {
 
 		ApiEven.DeInit();
 	}
-	ApiUI.close();
+	XuiClose();
 	//*/
+	TRACE("->Main End\r\n");
 	//------------------------------------------------------------
 	return 0;
 }

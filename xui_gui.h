@@ -250,15 +250,16 @@ typedef struct {
 	A_RGB	titleFclr,contFclr;	//标题背景色，标题字体色
 //	A_RGB		titleBclr,contBclr;	//内容背景色，内容字体色
 	//A_RGB		cont1clr,cont2clr; 	 //选项背景色，选项字体色
-	void (*pFillColour)(A_RGB*,int,int);
+	FunFillColour pFillColour;
+	XuiWindow *pOldWindow;
 }GUI_THEME_MSG;
 
 extern void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme);
 
-extern void API_FillMenuBack(A_RGB* widget,int w,int h);
-extern void API_FillShowBack(A_RGB* widget,int w,int h);
+extern void API_FillMenuBack(A_RGB* pBack,int w,int h);
+extern void API_FillShowBack(A_RGB* pBack,int w,int h);
 
-extern void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int));
+extern void API_Set_Background(FunFillColour pFillColour);
 
 extern int APP_WaitUiEvent(int tTimeOutMS);
 //=================================================================================

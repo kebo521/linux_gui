@@ -52,7 +52,7 @@ void FIFO_OperatSetMsg(u16 MessageID,u16 Message)
 		//-----检查消息堆已满,覆盖最第一条倒入的消息---------
 		//if(!((pMessageTable->WriteID ^ pMessageTable->ReadID)&0x03))
 		//	pMessageTable->ReadID++;
-		TRACE("FIFO_OperatSetMsg[%X] WriteID[%d]MessageID[%d]Message[%d]\r\n",pMessageTable->threadID,WriteID, MessageID, Message);
+		//TRACE("FIFO_OperatSetMsg[%X] WriteID[%d]MessageID[%d]Message[%d]\r\n",pMessageTable->threadID,WriteID, MessageID, Message);
 	}
 }
 //阻塞式接收消息接口
@@ -86,7 +86,7 @@ int  FIFO_OperatGetMsg(u16 *pMessageID,u16 *pMessage)
 				*pMessageID=MessageID;
 			if(pMessage)
 				*pMessage=MessagePar;
-			TRACE("FIFO_OperatGetMsg[%X]ReadID[%d]MessageID[%d]Message[%d]\r\n",pMessageTable->threadID,ReadID, *pMessageID, *pMessage);
+			//TRACE("FIFO_OperatGetMsg[%X]ReadID[%d]MessageID[%d]Message[%d]\r\n",pMessageTable->threadID,ReadID, *pMessageID, *pMessage);
 			return 1;
 		}
 	}

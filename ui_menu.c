@@ -283,7 +283,7 @@ int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*
 	while(pMenuUiTable)
 	{
 		//----------ÏÔÊ¾²Ëµ¥---------------------
-		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,1);
+		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,GUI_MENU_LINE);
 		API_GUI_Menu(pMenuUiTable->pItem,pShowItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
 		API_GUI_Show();
 	//	pMenuUiTable->ShowState=_GUI_MENU_PROCESS;

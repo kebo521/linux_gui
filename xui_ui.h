@@ -14,6 +14,8 @@ typedef struct{
 
 typedef unsigned int  			A_RGB;		// <= RGB_CURR
 
+typedef void (*FunFillColour)(A_RGB*,int,int);
+
 /**
  * GUIÖ§³ÖµÄÍ¼Ïñ¸ñÊ½¶¨Òå
  */
@@ -34,8 +36,8 @@ typedef struct _XuiWindow{
 	
 	unsigned short left,top,width,height;
 	
-	unsigned short key;		//å…³è”æŒ‰é”®å€¼
-	unsigned short type;	//Window çª—å£ç±»å‹ï¼Œè¯¦è§XuiWindowType
+//	unsigned short key;		//å…³è”æŒ‰é”®å€¼
+//	unsigned short type;	//Window çª—å£ç±»å‹ï¼Œè¯¦è§XuiWindowType
 	
 	A_RGB* 		wBack;	//Window ±³¾°É«£¬ÎŞ ¿É½èÓÃ¸´´°¿Ú»¹Ô­
 	A_RGB* 		widget;	//ÓÃ½á¹¹ÌåºóÃæµÄ¿Õ¼ä²»ĞèÒªÊÍ·Å£¬Window å…³è”ç”»å¸ƒæŒ‡é’ˆ
@@ -43,7 +45,6 @@ typedef struct _XuiWindow{
 //extern XuiWindow UI_screen;
 
 //extern int UI_RootCanvas(screen_buffer* fb);
-//extern void XuiClose(void);
 typedef struct {
 	int SetFlag;	//ÊÇ·ñ³õÊ¼»¯±ê¼Ç
 	int iRotate;	//Ğı×ª·½Ïò 0£¬90 £¬180 £¬270 
@@ -52,9 +53,11 @@ typedef struct {
 	int TsDev_fd;
 	int Screen_fd;
 	XuiWindow tHardWindow;
-	u16 left,top;
+//	u16 left,top;
 }gUi_def;
 extern gUi_def gUiDataAll;
+extern int XuiOpen(int argc,char **argv);
+extern void XuiClose(void);
 
 extern XuiWindow *XuiRootCanvas(void);
 extern XuiWindow *XuiStatusbarCanvas(void);
@@ -65,7 +68,7 @@ extern void XuiDestroyWindow(XuiWindow *window);
 extern int XuiClearArea(XuiWindow *window, unsigned int x,unsigned int y, unsigned int width, unsigned int height);
 extern void XuiShowWindow(XuiWindow *window,int show, int flag);
 
-extern void UI_SetBackground(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int));	//(u32* pOut,int width,int height)
+extern void UI_SetBackground(XuiWindow *pWindow,FunFillColour pFillColour);	//(u32* pOut,int width,int height)
 extern void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,A_RGB Color);
 extern void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,A_RGB Color);
 

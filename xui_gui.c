@@ -36,64 +36,65 @@ void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme)
 	tGuiThemeMsg.titleFclr = FONT_TITLE_COLOUR;
 	tGuiThemeMsg.contFclr = RGB565_TIEM_FONT;
 	tGuiThemeMsg.pWindow = pWindow;
+	//TRACE("Theme[%d][%d][%d][%d][%d]\r\n",tGuiThemeMsg.hfont,tGuiThemeMsg.hn,tGuiThemeMsg.hmc,tGuiThemeMsg.htitle,tGuiThemeMsg.hcont);
 }
 
-void API_FillMenuBack(A_RGB* widget,int w,int h)
+void API_FillMenuBack(A_RGB* pBack,int w,int h)
 {
 	A_RGB colour;
 	A_RGB *pEnd;
 	int item;
 	colour=UI_TITLE_COLOUR;
 	//--------------标题空间-------------------------
-	pEnd = widget+ (w*tGuiThemeMsg.htitle);
-	while(widget < pEnd)
+	pEnd = pBack+ (w*tGuiThemeMsg.htitle);
+	while(pBack < pEnd)
 	{
-		*widget++ = colour;
+		*pBack++ = colour;
 	}
 	//--------------内容空间------------------------
-	for(item=0;item<tGuiThemeMsg.hn;item++)
+	for(item=0 ; item<tGuiThemeMsg.hn ; item++)
 	{
 		if(item&0x01)
 			colour = RGB_CURR(232,232,232);
 		else
 			colour = RGB_CURR(240,240,240);
-		pEnd = widget+ (w*tGuiThemeMsg.hmc);
-		while(widget < pEnd)
+		pEnd = pBack+ (w*tGuiThemeMsg.hmc);
+		while(pBack < pEnd)
 		{
-			*widget++ = colour;
+			*pBack++ = colour;
 		}
 	}
 }
 
-void API_FillShowBack(A_RGB* widget,int w,int h)
+void API_FillShowBack(A_RGB* pBack,int w,int h)
 {
 	A_RGB colour;
 	A_RGB *pEnd;
 	colour=UI_TITLE_COLOUR;
 	//--------------标题空间-------------------------
-	pEnd = widget+ (w*tGuiThemeMsg.htitle);
-	while(widget < pEnd)
+	pEnd = pBack+ (w*tGuiThemeMsg.htitle);
+	while(pBack < pEnd)
 	{
-		*widget++ = colour;
+		*pBack++ = colour;
 	}
 	//--------------内容空间------------------------
 	colour = RGB565_TIEM_ICON;
-	pEnd = widget+ (w*tGuiThemeMsg.hcont);
-	while(widget < pEnd)
+	pEnd = pBack+ (w*tGuiThemeMsg.hcont);
+	while(pBack < pEnd)
 	{
-		*widget++ = colour;
+		*pBack++ = colour;
 	}
 }
 //=================================================================================
-void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int))	// 'M' = menu , 'C'=cont
+void API_Set_Background(FunFillColour pFillColour)	// 'M' = menu , 'C'=cont
 {
-	if(pWindow==NULL) return;
 	if(pFillColour)
 	{
-		if(pWindow!=tGuiThemeMsg.pWindow || pFillColour != tGuiThemeMsg.pFillColour)
+		if(tGuiThemeMsg.pOldWindow!=tGuiThemeMsg.pWindow || pFillColour != tGuiThemeMsg.pFillColour)
 		{
-			UI_SetBackground(pWindow,pFillColour);
+			UI_SetBackground(tGuiThemeMsg.pWindow,pFillColour);
 			tGuiThemeMsg.pFillColour = pFillColour;
+			tGuiThemeMsg.pOldWindow = tGuiThemeMsg.pWindow;
 		}
 	}
 	{//----将背景色全拷贝到显示区-------
@@ -102,7 +103,7 @@ void API_Set_Background(XuiWindow *pWindow,void (*pFillColour)(A_RGB*,int,int))	
 		source = tGuiThemeMsg.pWindow->wBack;
 		if(source == NULL) return;
 		destin = tGuiThemeMsg.pWindow->widget;
-		max= tGuiThemeMsg.pWindow->height*tGuiThemeMsg.pWindow->width;
+		max= tGuiThemeMsg.pWindow->height * tGuiThemeMsg.pWindow->width;
 		while(max--)
 			*destin++ = *source++;
 	}
@@ -206,7 +207,6 @@ void Conv_TmoneyToDmoney(char* pOutdMoney,char* pIntMoney)
 void DisplayPaintEnd(XuiWindow *pWindow)
 {
 	UI_Push(pWindow,NULL);
-	//return xui_fb_rect_push(pWindow->left,pWindow->top,pWindow->width,pWindow->height,pWindow->widget);
 }
 
 
@@ -302,10 +302,9 @@ void API_GUI_Show(void)
 int  API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCancel,u32 tGuiType)
 {
 	if(tGuiType == GUI_MENU_LINE)
-		API_Set_Background(tGuiThemeMsg.pWindow,&API_FillMenuBack);
+		API_Set_Background(API_FillMenuBack);
 	else
-		API_Set_Background(tGuiThemeMsg.pWindow,&API_FillShowBack);
-	
+		API_Set_Background(API_FillShowBack);
 	if(pTitle!=NULL)
 	{
 		//-------------------显示标题--------------------------------
@@ -829,7 +828,7 @@ u32 APP_UI_MenuShow(u16 keyNum)
 	{//----------显示菜单--------
 		POINT tFontXY;
 		tFontXY.left = 4;
-		tFontXY.top =tGuiThemeMsg.htitle + (tGuiThemeMsg.hcont -tGuiThemeMsg.hfont)/2;
+		tFontXY.top =tGuiThemeMsg.htitle + (tGuiThemeMsg.hmc -tGuiThemeMsg.hfont)/2;
 		for(i=0;i<tGuiThemeMsg.hn;i++)
 		{
 			if(i >= MaxLine) break;
@@ -841,7 +840,7 @@ u32 APP_UI_MenuShow(u16 keyNum)
 				ApiFont.SetFontColor(tGuiThemeMsg.contFclr,RGB565_PARENT);
 				ApiFont.DrawLineString(tGuiThemeMsg.pWindow,&tFontXY,sBuff);
 			}
-			tFontXY.top  += tGuiThemeMsg.hcont;
+			tFontXY.top  += tGuiThemeMsg.hmc;
 		}
 		if(tGuiMenuMsg.pAfterText)
 		{
@@ -853,7 +852,7 @@ u32 APP_UI_MenuShow(u16 keyNum)
 				tFontXY.left=0;
 				tLenW = tGuiThemeMsg.width;
 			}
-			tFontXY.top= tGuiThemeMsg.hcont - tGuiThemeMsg.hcont + (tGuiThemeMsg.hcont-tGuiThemeMsg.hfont)/2;;
+			tFontXY.top= tGuiThemeMsg.hcont - tGuiThemeMsg.hmc + (tGuiThemeMsg.hmc-tGuiThemeMsg.hfont)/2;;
 			UI_vline(tGuiThemeMsg.pWindow,&tFontXY,tLenW,RGB_CURR(30,30,30));
 			tFontXY.top++;tFontXY.top++;
 			ApiFont.SetFontColor(tGuiThemeMsg.contFclr,RGB565_PARENT);
@@ -1277,7 +1276,7 @@ int APP_WaitUiEvent(int tTimeOutMS)
 void APP_ShowSta(XuiWindow *pWindow,char *pTitle,char *pMsg)
 {
 	API_GUI_SetTheme(pWindow,NULL);
-	API_GUI_CreateWindow(pTitle,NULL,NULL,0);
+	API_GUI_CreateWindow(pTitle,NULL,NULL,GUI_SHOW_MSG);
 	API_GUI_Info(NULL,TEXT_ALIGN_CENTER|TEXT_VALIGN_CENTER,pMsg);
 	API_GUI_Show();
 }
@@ -1292,7 +1291,7 @@ int APP_ShowMsg(XuiWindow *pWindow,char *pTitle,char *pMsg,int timeOutMs)
 int APP_ShowInfo(XuiWindow *pWindow,char *pTitle,char *pInfo,int timeOutMs)
 {
 	API_GUI_SetTheme(pWindow,NULL);
-	API_GUI_CreateWindow(pTitle,TOK,TCANCEL,0);
+	API_GUI_CreateWindow(pTitle,TOK,TCANCEL,GUI_SHOW_MSG);
 //	API_GUI_OprInfo(pInfo,NULL);
 	API_GUI_Show();
 	return APP_WaitUiEvent(timeOutMs);
