@@ -33,51 +33,99 @@
 
 #include "xui_ui.h"
 #include "xui_fb.h"
-#include "xui_show.h"
 #include "xui_font.h"
-
-
 #include "xui_gui.h"
+
+//==========字义系统字库=======================
+#define SYS_FUNT_12EN
+#define SYS_FUNT_16EN
+//#define SYS_FUNT_24EN
 
 #include "fontEn_6x12.h"
 
-
-
-//==================显示英文，不需要字库支持===================================
-void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms)
+void UI_DisplaySysEn(XuiWindow *pWindow,int x,int y,int type,char*pMsgEn) 
 {
 	u32 *pbgra;
-	u8	i,j,jn,jb;	//readLen,
-	u16 x,y;	
+	u8*	pbit;
+	u8	i,j,jn;	//readLen,
+	u8	cH,cW,cZ;
+	u16 jb;
+	u16 width,height;
+	u32* pWidget;
 
-	x = 0;
-	y = Line*12;
+	#ifdef SYS_FUNT_12EN
+	if(type == TEXT_12)
+	{
+		cH = 12; cW = 6; cZ = 12;
+		pbit = funt6x12EnBuff;
+	}
+	else 
+	#endif
+	#ifdef SYS_FUNT_16EN
+	if(type == TEXT_16)
+	{
+		cH = 16; cW = 8; cZ = 16;
+		pbit = funt6x16EnBuff;
+	}
+	else 
+	#endif
+	#ifdef SYS_FUNT_24EN
+	if(type == TEXT_24)
+	{
+		cH = 24; cW = 12; cZ = 48;
+		pbit = funt12x24EnBuff;
+	}
+	else 
+	#endif
+			return;
+	//---------------------------------------------------------------
+	pWidget	= pWindow->widget;
+	width	= pWindow->width;
+	height	= pWindow->height;
 	while((jn=(u8)*pMsgEn++) != '\0')
 	{
 		if(jn >= 0x20)
 		{
-			if((x+6) >= UI_screen.width) 
+			if((y+cH) >= height) break;
+			
+			if((x+cW) >= width) 
 			{//--Automatic line feed display---
 				x = 0;
-				y += 12;
+				y += cH;
 			}
-			if((y+12) >= UI_screen.height) break;
-			
-			for(i = 0; i < 12; i++)
-			{	 
-				pbgra = &UI_screen.widget[(y+i)*UI_screen.width + x];
-				jb = funt6x12EnBuff[(jn-0x20)*12 + i];
-				for(j = 0; j < 6; j++)
-				{
+			#ifdef SYS_FUNT_24EN
+			if(cW > 8) {
+				for(i = 0; i < cH; i++) {	 
+					pbgra = &pWidget[(y+i)*width + x];
+					jb = pbit[(jn-0x20)*cZ + i*2]*256 + pbit[(jn-0x20)*cZ + i*2+1];
+					for(j = 0; j < cW; j++) {
+						if(jb & (0x8000>>j))
+							*pbgra = 0xffffffff;
+						pbgra++;
+					}
+				}
+			}
+			else
+			#endif
+			for(i = 0; i < cH; i++) {
+				pbgra = &pWidget[(y+i)*width + x];
+				jb = pbit[(jn-0x20)*cZ + i];
+				for(j = 0; j < cW; j++) {
 					if(jb & (0x80>>j))
 						*pbgra = 0xffffffff;
 					pbgra++;
 				}
 			}
 		}
-		x += 6;
+		x += cW;
 	}
-	ApiUI.Push(NULL);
+}
+
+//==================显示英文，不需要字库支持===================================
+void API_ShowLineEn(u8 Line,char *pMsgEn,int timeoutms) 
+{
+	if(gUiDataAll.tHardWindow.widget == NULL) return;
+	UI_DisplaySysEn(&gUiDataAll.tHardWindow,0,Line*TEXT_12,TEXT_12,pMsgEn);
 	if(timeoutms) sleep(timeoutms/1000);
 }
 
@@ -489,7 +537,7 @@ void UI_SetFontColor(u32 fgColor,u32 bgColor)
 	//LCD_SetColorRGB565(fgColor,bgColor);
 }
 
-int UI_DisplayFont(POINT* prclTrg, u8* hzData)
+int UI_DisplayFont(XuiWindow *pWindow,POINT* prclTrg, u8* hzData)
 {
 	u32 *pbgra;
 	u8 *s_dots;
@@ -497,10 +545,17 @@ int UI_DisplayFont(POINT* prclTrg, u8* hzData)
 	int  offset;
 	u8  i,j;	//readLen,
 	u8  wMax,wi,db;	//readLen,
+	u16 width,height;
+	u32* pWidget;
 	
     if(resDisTable.pbFont == NULL)
         return 0;
-	if(prclTrg->left >= UI_screen.width || prclTrg->top>=UI_screen.height) 
+	//----------------------------------------------------------------
+	pWidget = pWindow->widget;
+	width	= pWindow->width;
+	height	= pWindow->height;
+	
+	if(prclTrg->left >= width || prclTrg->top>=height) 
 		return 0;
     rect.left = prclTrg->left;
     rect.top = prclTrg->top;    
@@ -526,8 +581,8 @@ int UI_DisplayFont(POINT* prclTrg, u8* hzData)
 	//--------------------------------------------------
     for (i = 0; i < FONT_SIZE; i++)
     {    
-    	if((u16)(rect.top+i) >= UI_screen.height) break;
-    	pbgra=&UI_screen.widget[(rect.top+i)*UI_screen.width+rect.left];
+    	if((u16)(rect.top+i) >= height) break;
+    	pbgra=&pWidget[(rect.top+i)*width+rect.left];
         for (j = 0; j < rect.width; j+=8)
         {
         	db=*s_dots++;
@@ -535,7 +590,7 @@ int UI_DisplayFont(POINT* prclTrg, u8* hzData)
 			if(wMax>8) wMax=8;
         	for(wi=0;wi<wMax;wi++)
         	{
-        		if((u16)(rect.left+j+wi) >= UI_screen.width) break;
+        		if((u16)(rect.left+j+wi) >= width) break;
 				if(db&0x80) 	//if((db<<(wi&0x07)) & 0x80)	//
 				{
 					*pbgra = *(u32*)&uiFontColor;
@@ -552,7 +607,7 @@ int UI_DisplayFont(POINT* prclTrg, u8* hzData)
 	return rect.width;
 }
 
-int UI_DrawLineString(POINT* prclTrg,const char *src)
+int UI_DrawLineString(XuiWindow *pWindow,POINT* prclTrg,const char *src)
 {
 	int ret,offset=0;
 	POINT rclTrg;
@@ -562,7 +617,7 @@ int UI_DrawLineString(POINT* prclTrg,const char *src)
 	{
 		if(src[offset] & 0x80)
 		{
-			ret=UI_DisplayFont(&rclTrg,(u8*)src+offset);
+			ret=UI_DisplayFont(pWindow,&rclTrg,(u8*)src+offset);
 			if(ret <= 0) break;
 			rclTrg.left += ret;	
 			offset++;
@@ -574,7 +629,7 @@ int UI_DrawLineString(POINT* prclTrg,const char *src)
 		}
 		else if(src[offset] >= ' ')
 		{
-			ret=UI_DisplayFont(&rclTrg,(u8*)src+offset);
+			ret=UI_DisplayFont(pWindow,&rclTrg,(u8*)src+offset);
 			if(ret <= 0) break;
 			rclTrg.left += ret;
 		}
@@ -583,8 +638,7 @@ int UI_DrawLineString(POINT* prclTrg,const char *src)
 	return offset;
 }
 
-
-int UI_DrawRectString(RECTL* pRect,const char *src)
+int UI_DrawRectString(XuiWindow *pWindow,RECTL* pRect,const char *src)
 {
 	int offset=0;
 	POINT rclTrg;
@@ -602,7 +656,7 @@ int UI_DrawRectString(RECTL* pRect,const char *src)
 					return offset;
 				rclTrg.left = pRect->left;
 			}
-			rclTrg.left += UI_DisplayFont(&rclTrg,(u8*)src+offset);
+			rclTrg.left += UI_DisplayFont(pWindow,&rclTrg,(u8*)src+offset);
 			offset++;
 		}
 		else if(src[offset] == '\n')
@@ -629,7 +683,7 @@ int UI_DrawRectString(RECTL* pRect,const char *src)
 			else
 				DisplayString(&rclTrg, (LPBYTE)sBuff);
 				*/
-			rclTrg.left += UI_DisplayFont(&rclTrg,(u8*)src+offset);
+			rclTrg.left += UI_DisplayFont(pWindow,&rclTrg,(u8*)src+offset);
 		}
 		offset++;
 	}
@@ -638,7 +692,7 @@ int UI_DrawRectString(RECTL* pRect,const char *src)
 
 const API_FONT_Def ApiFont={
 	{'F','N','T',6},
-	API_ShowLineEn,
+	UI_DisplaySysEn,
 	
 	InitExtResLib,
 	DeInitExtResLib,

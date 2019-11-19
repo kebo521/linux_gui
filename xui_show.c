@@ -21,10 +21,11 @@
 //#include <stdarg.h>
 
 #include "types_def.h"
-#include "xui_fb.h"
-#include "xui_show.h"
-#include "xui_font.h"
 #include "xui_ui.h"
+
+//#include "xui_fb.h"
+//#include "xui_show.h"
+//#include "xui_font.h"
 #include "xui_gui.h"
 #include "ui_menu.h"
 
@@ -34,29 +35,29 @@
 
 
 
-int APP_QrCodeTest(char *pTitle)
+int APP_QrCodeTest(XuiWindow *pWindow,char *pTitle)
 {
 	RECTL rpin;
 	char *pshowfont="12345678abcd";
-	APP_ShowSta("∂˛Œ¨¬Î≤‚ ‘",NULL);
+	APP_ShowSta(pWindow,"∂˛Œ¨¬Î≤‚ ‘",NULL);
 	rpin.top=24+40;
 	rpin.left=10;
 	rpin.width=SCREEN_WIDTH-rpin.left;
 	rpin.height=SCREEN_HEIGT-rpin.top;
-	ApiUI.ShowQrCode(&rpin,pshowfont,RGB_CURR(0,0,0xff));
-	ApiUI.Push(NULL);
+	ApiUI.ShowQrCode(pWindow,&rpin,pshowfont,RGB_CURR(0,0,0xff));
+	ApiUI.Push(pWindow,NULL);
 	return APP_WaitUiEvent(5000);
 }
 
 
 
-int APP_AutoTest(char *pTitle)
+int APP_AutoTest(XuiWindow *pWindow,char *pTitle)
 {
-	APP_ShowMsg(pTitle,"≤‚ ‘œÓ1234",2000);
+	APP_ShowMsg(pWindow,pTitle,"≤‚ ‘œÓ1234",2000);
 	return 0;
 }
 
-int APP_HardTestMenu(char* title)
+int APP_HardTestMenu(XuiWindow *pWindow,char* title)
 {
 	CMenuItemStru MenuStruPar[]=
 	{
@@ -75,7 +76,7 @@ int APP_HardTestMenu(char* title)
 }
 
 
-int APP_FactoryMeun(char* title)
+int APP_FactoryMeun(XuiWindow *pWindow,char* title)
 {
 	CMenuItemStru MenuStruPar[]=
 	{

@@ -33,11 +33,11 @@ typedef union {
 
 typedef struct {
 	int dev_fd;
-	int bytes_per_pixel;
+	u16 openFlagOK;
+	u16 bytes_per_pixel;
+	u16 width,height;	
 	int line_length;
 	int memlen;
-	unsigned short width;	//Window 宽度
-	unsigned short height;	//Window 高度
 	union 
 	{
 		unsigned char *buffer;	//Window 关联画布指针
@@ -50,22 +50,30 @@ typedef struct {
 
 
 //===========================================================================================
+typedef struct{
+  u16 width;
+  u16 height;
+  u16 wLen;
+  u16 pixel;
+  unsigned char *buffer;
+}SCREEN_AREA;
 
 	
 
-extern screen_buffer* open_screen(const char* filename);
-extern void close_screen(screen_buffer *fb);
+extern int open_screen(const char* filename,XuiWindow *pHardWindow);
+extern void close_screen(void);
 
-extern int xui_fb_line(screen_buffer* fb, int xs, int ys, int xe, int ye, const rgba_t* rgba);
-extern int xui_fb_circle(screen_buffer* fb, signed short x, signed short y, signed short r, const rgba_t* rgba);
-extern int xui_fb_fill_circle(screen_buffer* fb, signed short x, signed short y, signed short r,signed short ar, const rgba_t* rgba);
-extern int xui_fb_vline(screen_buffer* fb, int x, int y, int h, const rgba_t* rgba);
-extern int xui_fb_hline(screen_buffer* fb, int x, int y, int w, const rgba_t* rgba);
-extern int xui_fb_fill_rect(screen_buffer* fb, int x, int y, int w, int h,const rgba_t* rgba);
-extern int xui_fb_stroke_rect(screen_buffer* fb, int x, int y, int w, int h,const rgba_t* rgba);
-extern int xui_fb_close(screen_buffer* fb);
-extern int xui_fb_show_rect(screen_buffer* fb, int x, int y, int w, int h,rgba_t* rgba);
-extern int xui_fb_rect_push(screen_buffer* fb, int x, int y, int w, int h,rgba_t* pInrgb);
+extern int xui_fb_line(int xs, int ys, int xe, int ye, const rgba_t* rgba);
+extern int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* rgba);
+extern int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed short ar, const rgba_t* rgba);
+extern int xui_fb_vline(int x, int y, int h, const rgba_t* rgba);
+extern int xui_fb_hline(int x, int y, int w, const rgba_t* rgba);
+extern int xui_fb_fill_rect(int x, int y, int w, int h,const rgba_t* rgba);
+extern int xui_fb_stroke_rect(int x, int y, int w, int h,const rgba_t* rgba);
+//extern int xui_fb_close(screen_buffer* fb);
+extern int xui_fb_show_rect(int x, int y, int w, int h,rgba_t* rgba);
+extern int xui_fb_rect_push(int x, int y, int w, int h,rgba_t* pInrgb);
+extern int xui_rect_push(RECTL* pRect,int mLen,u32* pInrgb);
 
 
 #endif /*LINUX_FB_H*/

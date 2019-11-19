@@ -26,16 +26,22 @@ typedef struct
 
 
 
-typedef struct {
-	unsigned short left,top;
-	unsigned short width;	//Window å®½åº¦
-	unsigned short height;	//Window é«˜åº¦
+typedef struct _XuiWindow{
+	struct _XuiWindow *pChild;	//¸¸Ò»¸ö´°¿Ú
+	struct _XuiWindow *pParent;	//×Ó´°¿Ú
+	struct _XuiWindow *pNext;		//×Ó´°¿Ú....
+	
+	unsigned short left,top,width,height;
+	unsigned int wLen;		//Ã¿Ò»ĞĞµÄbety Êı
+	
 	unsigned short key;		//å…³è”æŒ‰é”®å€¼
 	unsigned short type;	//Window çª—å£ç±»å‹ï¼Œè¯¦è§XuiWindowType
-	unsigned int* widget;	//Window å…³è”ç”»å¸ƒæŒ‡é’ˆ
-	void *fb;
+	
+	
+	unsigned int* wBack;	//Window ±³¾°É«£¬ÎŞ ¿É½èÓÃ¸´´°¿Ú»¹Ô­
+	unsigned int* widget;	//ÓÃ½á¹¹ÌåºóÃæµÄ¿Õ¼ä²»ĞèÒªÊÍ·Å£¬Window å…³è”ç”»å¸ƒæŒ‡é’ˆ
 } XuiWindow;
-extern XuiWindow UI_screen;
+//extern XuiWindow UI_screen;
 
 //extern int UI_RootCanvas(screen_buffer* fb);
 //extern void XuiClose(void);
@@ -45,30 +51,35 @@ typedef struct {
 	int iStatusbar;	///*×´Ì¬À¸¸ß¶È£¨0-64£¬Ä¬ÈÏÖµ0£¬ÉèÖÃ²»Ö§³ÖµÄÖµÊ±¾ùÊ¹ÓÃÄ¬ÈÏÖµ£©*/
 	int keys_fd;
 	int TsDev_fd;
-	void* pFbMsg;
+	int Screen_fd;
+	XuiWindow tHardWindow;
+	u16 left,top;
 }gUi_def;
 extern gUi_def gUiDataAll;
 
 
 
-typedef struct	
+typedef struct _API_UI	
 {
 	char Mask[4]; 	// "UI"
 	int (*open)(int,char **);	//(int argc,char **argv)
 	void (*close)(void);
 
-	int (*RootCanvas)(void);
-	int(*StatusbarCanvas)(void);
+	XuiWindow* (*RootCanvas)(void);
+	XuiWindow* (*StatusbarCanvas)(void);
+	void (*ShowWindow)(XuiWindow *,int,int);	//XuiWindow *,int show, int flag
+	void (*DestroyWindow)(XuiWindow *);
 
-	void (*Push)(RECTL*);	//Cache area is pushed to video memory,(RECTL==NULL,Show full area)
-	void (*FillRectSingLe)(RECTL*,u32);	//(xywh,RGB_CURR(r,g,b))
-	void (*SetRectBuff)(RECTL*,gUIrgba*);	//(xywh,gUIrgba...)
-	void (*GetRectBuff)(RECTL*,gUIrgba*); //(xywh,gUIrgba...)
+	void (*Push)(XuiWindow *,RECTL*);	//Cache area is pushed to video memory,(RECTL==NULL,Show full area)
 
-	void (*ShowQrCode)(RECTL* ,const char*,u32);	//(xywh,"Text",RGB_CURR(r,g,b))
-	int (*ShowPictureFile)(RECTL *,const char *);
-	void (*ShowBottomProgress)(int);	//ratio (0~100)
-	void (*ShowParMiddleSlide)(int); //ratio (0~100)
+	void (*FillRectSingLe)(XuiWindow *,RECTL*,u32);	//(xywh,RGB_CURR(r,g,b))
+	void (*SetRectBuff)(XuiWindow *,RECTL*,gUIrgba*);	//(xywh,gUIrgba...)
+	void (*GetRectBuff)(XuiWindow *,RECTL*,gUIrgba*); //(xywh,gUIrgba...)
+
+	void (*ShowQrCode)(XuiWindow *,RECTL* ,const char*,u32);	//(xywh,"Text",RGB_CURR(r,g,b))
+	int (*ShowPictureFile)(XuiWindow *,RECTL *,const char *);
+	void (*ShowBottomProgress)(XuiWindow *,int);	//ratio (0~100)
+	void (*ShowParMiddleSlide)(XuiWindow *,int); //ratio (0~100)
 }API_UI_Def;
 
 

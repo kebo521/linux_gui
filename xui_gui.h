@@ -245,13 +245,13 @@ extern int APP_WaitUiEvent(int tTimeOutMS);
 //extern void UI_DisplayBitMapEND(void);
 
 //==================================================================================
-extern void UI_ShowColorRect(RECTL *pRect,u16 Width,u32 Color);
-extern void API_GUI_InputEdit(char* pStrDef,int tMaxLen,u32 Way,Fun_ShowNum pShow);
+extern void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,u32 Color);
+extern void API_GUI_InputEdit(XuiWindow *pWindow,char* pStrDef,int tMaxLen,u32 Way,Fun_ShowNum pShow);
 
 
 
 //===============清除显示内容(指定区域)=================================================
-extern void API_GUI_ClearScreen(RECTL* pRect);
+extern void API_GUI_ClearScreen(XuiWindow *pWindow,RECTL* pRect);
 /**
  * 创建一个窗体用于GUI界面交互
  *
@@ -264,7 +264,7 @@ extern void API_GUI_ClearScreen(RECTL* pRect);
  * @return {@link RET_FUNCTION_NOT_SUPPORT}		功能不支持
  * @return {@link RET_SYSTEM_ERROR}     		系统错误
  */
-extern int   API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCancel,u32 tGuiType);
+extern int   API_GUI_CreateWindow(XuiWindow *pWindow,const char* pTitle,const char* pOk,const char* pCancel,u32 tGuiType);
 
 /**
  * GUI提示信息显示
@@ -278,9 +278,9 @@ extern int   API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char*
  * @return {@link RET_FUNCTION_NOT_SUPPORT}		功能不支持
  * @return {@link RET_SYSTEM_ERROR}     		系统错误
  */
-extern int  API_GUI_Info(const IMAGE* pImg,u32 tTextType,const char* pTextBuf);
-extern void API_GUI_Edit_Prompt(u32 tFrontTextType,char* pFrontTextBuf,u32 tAfterTextType,char* pAfterTextBuf);
-extern void API_GUI_Edit(u32 tTextType,char* pTextDef,int tMaxLen,u32 tImeType,u32 tImeLimit);
+extern int  API_GUI_Info(XuiWindow *pWindow,const IMAGE* pImg,u32 tTextType,const char* pTextBuf);
+extern void API_GUI_Edit_Prompt(XuiWindow *pWindow,u32 tFrontTextType,char* pFrontTextBuf,u32 tAfterTextType,char* pAfterTextBuf);
+extern void API_GUI_Edit(XuiWindow *pWindow,u32 tTextType,char* pTextDef,int tMaxLen,u32 tImeType,u32 tImeLimit);
 
 
 extern int API_GUI_Edit_GetText(char* pAscText,int tMaxLen);
@@ -300,14 +300,14 @@ extern int API_GUI_Edit_GetText(char* pAscText,int tMaxLen);
  * @return {@link RET_FUNCTION_NOT_SUPPORT}		功能不支持
  * @return {@link RET_SYSTEM_ERROR}     		系统错误
  */
-extern int API_GUI_Menu(void* pMenu,void (*pShowItem)(void *,int,int,char*),int tNum,int tCurInx,int tHead,char* pAfterText,void* KeyFunEn);
+extern int API_GUI_Menu(XuiWindow *pWindow,void* pMenu,void (*pShowItem)(void *,int,int,char*),int tNum,int tCurInx,int tHead,char* pAfterText,void* KeyFunEn);
 extern int API_GUI_Menu_GetInx(void);
 extern int API_GUI_Menu_GetInxAndHear(int* tHead);
 
 
-extern int   APP_GUI_Menu(char* pTitle,int stratIndex,int tNum,int tCurInx,char** pMenuText);
+extern int   APP_GUI_Menu(XuiWindow *pWindow,char* pTitle,int stratIndex,int tNum,int tCurInx,char** pMenuText);
 
-extern void APP_ShowChangeInfo(char *pOriginal,int Originalsize,const char* format,...);
+extern void APP_ShowChangeInfo(XuiWindow *pWindow,char *pOriginal,int Originalsize,const char* format,...);
 
 //extern void API_GUI_Draw565QRcode(RECTL* prclTrg,char *pInMsg,u32 fgColor, u32 bgColor);
 
@@ -318,18 +318,15 @@ extern void APP_ShowChangeInfo(char *pOriginal,int Originalsize,const char* form
  * @return {@link RET_FUNCTION_NOT_SUPPORT}		功能不支持
  * @return {@link RET_SYSTEM_ERROR}     		系统错误
  */
-extern int API_GUI_Show(void);
+extern int API_GUI_Show(XuiWindow *pWindow);
 
-extern void APP_ShowSta(char *pTitle,char *pMsg);
+extern void APP_ShowSta(XuiWindow *pWindow,char *pTitle,char *pMsg);
 //===========剧中显示内容=======
-extern int APP_ShowMsg(char *pTitle,char *pMsg,int timeOutMs);
+extern int APP_ShowMsg(XuiWindow *pWindow,char *pTitle,char *pMsg,int timeOutMs);
 //===========左上角显示内容=======
-extern int APP_ShowInfo(char *pTitle,char *pInfo,int timeOutMs);
+extern int APP_ShowInfo(XuiWindow *pWindow,char *pTitle,char *pInfo,int timeOutMs);
 
 //extern int APP_GUI_Edit(char *pTitle,const char* pFrontTextBuf,const char* pAfterTextBuf,char* pOutMsg,int MinLen,int MaxLen);
-
-
-extern void APP_HitMsg(const char* pMsg,int tTimeOutMS);
 
 /**
  * 构建一个GUI菜单行列表 
@@ -338,7 +335,7 @@ extern void APP_HitMsg(const char* pMsg,int tTimeOutMS);
  * @param LineMax 		行数量(Bit15 行号标记)
  * @param pAfterText 	末行显示内容(上划线右靠)
  */
-extern void APP_GUI_LineMenu(char* pTitle,char **pLineText,u16 LineMax,char* pAfterText);
+extern void APP_GUI_LineMenu(XuiWindow *pWindow,char* pTitle,char **pLineText,u16 LineMax,char* pAfterText);
 
 //====回调函数指针，用于GUI选项列表显示项==========
 /**
@@ -357,7 +354,7 @@ typedef int (*fOption_ShowItem)(char*,int);
  * @param pFunShowItem 	显示内容生成函数
  * @param return 		显示参数排列项剩余项
  */
-extern void APP_GUI_Option(char* pTitle,char **pMenuText,int ItemMax,u8 UpDownBit);
+extern void APP_GUI_Option(XuiWindow *pWindow,char* pTitle,char **pMenuText,int ItemMax,u8 UpDownBit);
 
 
 //====回调函数指针，用于GUI选项处理功能==========
@@ -379,7 +376,7 @@ typedef int (*fOption_RunItem)(char*,int);
  * @param pFunKey 		功能键操作内容
  * @param return 		显示参数排列项
  */
-int APP_GUI_OpProcess(char *pTitle,fOption_ShowItem pFunShowItem,fOption_RunItem pFunRunItem,APP_HANDLE pFunKey);
+//int APP_GUI_OpProcess(XuiWindow *pWindow,char *pTitle,fOption_ShowItem pFunShowItem,fOption_RunItem pFunRunItem,APP_HANDLE pFunKey);
 
 
 typedef struct	

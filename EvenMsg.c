@@ -8,7 +8,6 @@
 
 #include "types_def.h"
 #include "EvenMsg.h"
-#include "xui_show.h"
 #include "key_hard.h"
 
 

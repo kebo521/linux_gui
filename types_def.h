@@ -83,7 +83,6 @@ typedef struct{
 #define log_error(format, args...) printf(format, ##args)
 
 typedef void (*Fun_ShowNum)(u32,char*); 
-typedef int (*APP_HANDLE)(char*); 
 
 #define API_strlen		strlen
 #define API_strcpy		strcpy

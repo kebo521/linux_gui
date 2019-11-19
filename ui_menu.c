@@ -7,13 +7,14 @@
 
 #include "EvenMsg.h"
 
-#include "xui_fb.h"
-#include "ui_menu.h"
-#include "xui_show.h"
-#include "xui_font.h"
 #include "xui_ui.h"
+#include "xui_fb.h"
+#include "xui_font.h"
 #include "xui_gui.h"
-#include "EvenMsg.h"
+
+#include "ui_menu.h"
+
+//#include "EvenMsg.h"
 
 
 //============菜单显示处理用到的参数======================
@@ -36,9 +37,9 @@ typedef struct _CMenuUITable
 	u8		ShowHead;		//-屏第一行显示的菜单项
 	//----上面字节数必须是4的整数倍----------------
 	char	*pAfterText;		//最后一行显示内容
-	APP_HANDLE pKeyFunc;		//功能键处理内容
+	fMenuFun pKeyFunc;		//功能键处理内容
 	char	*pKeyFuncTitle;		//功能键处标题
-	APP_HANDLE pOutFunc;		//退出功能
+	fMenuFun pOutFunc;		//退出功能
 	char	*pOutFuncTitle;		//退出功能标题
 	APP_IndexH pUnifiedFunc;	//统一处理菜单接口
 
@@ -199,13 +200,13 @@ int APP_CreateNewMenuByList(char* pTitle,CMenuListPar* pMenulist,int TimeOutMs)
 //输出数据:GUI_Menu_msg
 //创作时间:  	20170317
 //---------------------------------------------------------------
-GUI_Menu_msg ReturnToPreviousMenu(u8 series,CMenuUITable *pEndMenu)  //RevocateMenuList
+GUI_Menu_msg ReturnToPreviousMenu(XuiWindow *pWindow,u8 series,CMenuUITable *pEndMenu)  //RevocateMenuList
 {
 	CMenuUITable* pOldeMenu;
 	while(pMenuUiTable!=NULL)
 	{
 		if(pMenuUiTable->pOutFunc)
-			pMenuUiTable->pOutFunc(pMenuUiTable->pOutFuncTitle);
+			pMenuUiTable->pOutFunc(pWindow,pMenuUiTable->pOutFuncTitle);
 		if(pEndMenu == pMenuUiTable)
 		{
 			pMenuUiTable=pMenuUiTable->pPrevious;
@@ -228,28 +229,14 @@ GUI_Menu_msg ReturnToPreviousMenu(u8 series,CMenuUITable *pEndMenu)  //RevocateM
 	return _GUI_MENU_EXT;
 }
 
-//====================================================================
-//功能:  向当前菜单导入功能
-//作用:  用于菜单需要增加额外功能
-//输入数据:pKeyFunc 功能键功能,pOutFunc退出时执行的功能,pAfterText最后一行显示。
-//输出数据:菜单执行结果
-//---------------------------------------------------------------
-void APP_AddCurrentMenuFun(APP_HANDLE pKeyFunc,APP_HANDLE pOutFunc,char *pAfterText)
-{
-	if(pMenuUiTable)
-	{
-		pMenuUiTable->pKeyFunc	= pKeyFunc;
-		pMenuUiTable->pOutFunc	= pOutFunc;
-		pMenuUiTable->pAfterText= pAfterText;
-	}
-}
+
 //====================================================================
 //功能:  向当前菜单添加其它功能键执行功能
 //作用:  用于菜单需要增加额外功能
 //输入数据:type 功能类型,pFunc功能执行函数，pFunTitle 功能标题(不支持栈空间)。
 //输出数据:无
 //---------------------------------------------------------------
-void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,APP_HANDLE pFunc,const char *pFunTitle)
+void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,fMenuFun pFunc,const char *pFunTitle)
 {
 	if(pMenuUiTable)
 	{
@@ -285,17 +272,18 @@ void ShowMenuItem(void *pMenu,int index,int line,char *pOutShow)
 //作用:  显示，并处理链表pMenuUiTable里面的菜单
 //输入数据:无
 //输出数据:菜单执行结果
+//注:改变了 pWindow 需要重新show,没改变不用
 //---------------------------------------------------------------
-int APP_ShowProsseMenu(void)
+int APP_ShowProsseMenu(XuiWindow *pWindow)
 {
 	CMenuUITable *pStartMenuAdd=pMenuUiTable;
 	u32 event,ret=EVENT_NONE;
 	while(pMenuUiTable)
 	{
 		//----------显示菜单---------------------
-		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,1);
-		API_GUI_Menu(pMenuUiTable->pItem,&ShowMenuItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
-		API_GUI_Show();
+		API_GUI_CreateWindow(pWindow,pMenuUiTable->pTitle,TOK,TCANCEL,1);
+		API_GUI_Menu(pWindow,pMenuUiTable->pItem,&ShowMenuItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
+		API_GUI_Show(pWindow);
 	//	pMenuUiTable->ShowState=_GUI_MENU_PROCESS;
 		//----------处理菜单----------------------
 		event=API_WaitEvent(pMenuUiTable->TimeOutMs,EVENT_UI,EVENT_NONE);	
@@ -310,20 +298,20 @@ int APP_ShowProsseMenu(void)
 	//			pMenuUiTable->ShowState=_GUI_MENU_SHOW; //执行完显示菜单
 				if(pMenuUiTable->pUnifiedFunc)
 				{//-----统一菜单处理----------
-					ret=(*pMenuUiTable->pUnifiedFunc)(pMenuUiTable->pItem[index].pText,index);
+					ret=(*pMenuUiTable->pUnifiedFunc)(pWindow,pMenuUiTable->pItem[index].pText,index);
 					if((ret&EVENT_MASK) == EVENT_QUIT)
 					{
-						if(_GUI_MENU_EXT == ReturnToPreviousMenu(ret&EVENT_INDEX,pStartMenuAdd))
+						if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,ret&EVENT_INDEX,pStartMenuAdd))
 							break;
 					}
 					continue;
 				}
 				if(pMenuUiTable->pItem[index].pFunMenu)
 				{//-----独立菜单处理------
-					ret=(*pMenuUiTable->pItem[index].pFunMenu)(pMenuUiTable->pItem[index].pText);
+					ret=(*pMenuUiTable->pItem[index].pFunMenu)(pWindow,pMenuUiTable->pItem[index].pText);
 					if((ret&EVENT_MASK) == EVENT_QUIT)
 					{
-						if(_GUI_MENU_EXT == ReturnToPreviousMenu(ret&EVENT_INDEX,pStartMenuAdd))
+						if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,ret&EVENT_INDEX,pStartMenuAdd))
 							break;
 					}
 				}
@@ -331,14 +319,14 @@ int APP_ShowProsseMenu(void)
 		}
 		else if(event==EVENT_CANCEL)
 		{
-			if(_GUI_MENU_EXT == ReturnToPreviousMenu(1,pStartMenuAdd))
+			if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,1,pStartMenuAdd))
 				break;
 	//		else
 	//			pMenuUiTable->ShowState=_GUI_MENU_SHOW;
 		}
 		else if(event==EVENT_TIMEOUT)
 		{
-			if(_GUI_MENU_EXT == ReturnToPreviousMenu(1,pStartMenuAdd))
+			if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,1,pStartMenuAdd))
 				break;
 	//		else
 	//			pMenuUiTable->ShowState=_GUI_MENU_SHOW;
@@ -349,12 +337,12 @@ int APP_ShowProsseMenu(void)
 				continue;
 	//		pMenuUiTable->ShowState=_GUI_MENU_SHOW; //执行完显示菜单
 			if(pMenuUiTable->pKeyFuncTitle)
-				ret=pMenuUiTable->pKeyFunc(pMenuUiTable->pKeyFuncTitle);
+				ret=pMenuUiTable->pKeyFunc(pWindow,pMenuUiTable->pKeyFuncTitle);
 			else
-				ret=pMenuUiTable->pKeyFunc(pMenuUiTable->pTitle);
+				ret=pMenuUiTable->pKeyFunc(pWindow,pMenuUiTable->pTitle);
 			if(EVENT_QUIT&ret)
 			{//-----退出所有菜单----------
-				ReturnToPreviousMenu(ret&EVENT_INDEX,pStartMenuAdd);
+				ReturnToPreviousMenu(pWindow,ret&EVENT_INDEX,pStartMenuAdd);
 				break;
 			}
 		}
