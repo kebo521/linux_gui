@@ -210,7 +210,7 @@ XuiWindow *XuiRootCanvas(void)
 		rgba_t rgba;
 		s16 staX,staY;
 		memset(&rgba,0x7f,sizeof(rgba));
-		staX=gUiDataAll.tHardWindow.left;
+		staX=gUiDataAll.tHardWindow.left-10;
 		staY=0;
 		xui_fb_fill_rect(staX,staY,FB_WIDTH,FB_HEIGHT,&rgba);
 	}

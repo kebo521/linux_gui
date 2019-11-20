@@ -243,23 +243,15 @@ typedef enum
 #define TCANCEL					"CANCEL"
 
 
-typedef struct {
-	XuiWindow *pWindow;
-	u16		hfont,hn,hmc;			//字体高度，内容数，菜单项高度
-	u16		width,htitle,hcont;		//菜单宽度，标题高度，内容高度
-	A_RGB	titleFclr,contFclr;	//标题背景色，标题字体色
-//	A_RGB		titleBclr,contBclr;	//内容背景色，内容字体色
-	//A_RGB		cont1clr,cont2clr; 	 //选项背景色，选项字体色
-	FunFillColour pFillColour;
-	XuiWindow *pOldWindow;
-}GUI_THEME_MSG;
 
-extern void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme);
+
+extern void API_GUI_Init(XuiWindow *pWindow,void *pTheme);
+extern XuiWindow *API_GUI_GetCurrWindow(void);
 
 extern void API_FillMenuBack(A_RGB* pBack,int w,int h);
 extern void API_FillShowBack(A_RGB* pBack,int w,int h);
 
-extern void API_Set_Background(FunFillColour pFillColour);
+//extern int API_Set_Background(FunFillColour pFillColour);
 
 extern int APP_WaitUiEvent(int tTimeOutMS);
 //=================================================================================
@@ -269,14 +261,14 @@ extern int APP_WaitUiEvent(int tTimeOutMS);
 //extern void UI_DisplayBitMapEND(void);
 
 //==================================================================================
-extern void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,A_RGB Color);
-extern void API_GUI_InputEdit(XuiWindow *pWindow,char* pStrDef,int tMaxLen,u32 Way,Fun_ShowNum pShow);
+extern void API_GUI_ShowColorRect(RECTL *pRect,u16 Width,A_RGB Color);
+extern void API_GUI_InputEdit(char* pStrDef,int tMaxLen,u32 Way,Fun_ShowNum pShow);
 
 
 extern void API_GUI_Show(void);
 
 //===============清除显示内容(指定区域)=================================================
-extern void API_GUI_ClearScreen(XuiWindow *pWindow,RECTL* pRect);
+extern void API_GUI_ClearScreen(RECTL* pRect);
 /**
  * 创建一个窗体用于GUI界面交互
  *
@@ -289,7 +281,7 @@ extern void API_GUI_ClearScreen(XuiWindow *pWindow,RECTL* pRect);
  * @return {@link RET_FUNCTION_NOT_SUPPORT}		功能不支持
  * @return {@link RET_SYSTEM_ERROR}     		系统错误
  */
-extern int   API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCancel,u32 tGuiType);
+extern int   API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCancel,FunFillColour fBackColour);
 
 /**
  * GUI提示信息显示
@@ -343,11 +335,11 @@ extern void APP_ShowChangeInfo(char *pOriginal,int Originalsize,const char* form
  * @return {@link RET_SYSTEM_ERROR}     		系统错误
  */
 
-extern void APP_ShowSta(XuiWindow *pWindow,char *pTitle,char *pMsg);
+extern void APP_ShowSta(char *pTitle,char *pMsg);
 //===========剧中显示内容=======
-extern int APP_ShowMsg(XuiWindow *pWindow,char *pTitle,char *pMsg,int timeOutMs);
+extern int APP_ShowMsg(char *pTitle,char *pMsg,int timeOutMs);
 //===========左上角显示内容=======
-extern int APP_ShowInfo(XuiWindow *pWindow,char *pTitle,char *pInfo,int timeOutMs);
+extern int APP_ShowInfo(char *pTitle,char *pInfo,int timeOutMs);
 
 //extern int APP_GUI_Edit(char *pTitle,const char* pFrontTextBuf,const char* pAfterTextBuf,char* pOutMsg,int MinLen,int MaxLen);
 
@@ -369,7 +361,7 @@ typedef int (*fOption_ShowItem)(char*,int);
  * @param pFunShowItem 	显示内容生成函数
  * @param return 		显示参数排列项剩余项
  */
-extern void APP_GUI_Option(XuiWindow *pWindow,char* pTitle,char **pMenuText,int ItemMax,u8 UpDownBit);
+extern void APP_GUI_Option(char* pTitle,char **pMenuText,int ItemMax,u8 UpDownBit);
 
 
 //====回调函数指针，用于GUI选项处理功能==========

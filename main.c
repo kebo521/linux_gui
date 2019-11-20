@@ -326,25 +326,15 @@ int main(int argc, char* argv[]) {
 		UI_DisplaySysEn(pWindow,0,TEXT_12+TEXT_16,TEXT_24,"0 yz131234&&*()_+~!@#$%^&*");
 		UI_Push(pWindow,NULL);
 		sleep(2);
-		API_GUI_SetTheme(pWindow,NULL);
-		
-		
-
-		API_GUI_CreateWindow(NULL,TOK,TCANCEL,GUI_MENU_LINE);
-		API_GUI_Show();
-		sleep(1);
-		API_GUI_CreateWindow("我在哪",TOK,TCANCEL,GUI_SHOW_MSG);
-		API_GUI_Show();
-		sleep(1);
-
 		
 		ApiEven.Init(0,0);
 		
 		ApiEven.LoadThread(NULL);
 		ApiFont.InitFontLib("./bin/ks.res");
-	
-		APP_FactoryMeun(pWindow,"硬件测试");
-		APP_ShowProsseMenu(pWindow,NULL);
+		API_GUI_Init(pWindow,NULL);
+		
+		APP_FactoryMeun("硬件测试");
+		APP_ShowProsseMenu(NULL);
 
 		ApiFont.DeInitFontLib();
 		ApiEven.KillThread(NULL);

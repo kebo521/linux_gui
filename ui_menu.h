@@ -2,8 +2,8 @@
 #define _UI_MENU_
 //=======单项菜单结构==========
 
-typedef int (*fMenuFun)(XuiWindow*,char*); 
-typedef int (*APP_IndexH)(XuiWindow*,char*,int); 
+typedef int (*fMenuFun)(char*); 
+typedef int (*APP_IndexH)(char*,int); 
 
 typedef struct 
 {//显示+功能
@@ -31,7 +31,7 @@ typedef enum
 }UI_MENU_ADD_TYPE;
 extern void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,fMenuFun pFunc,const char *pFunTitle);
 
-extern int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*));
+extern int APP_ShowProsseMenu(FunFillColour fBackColour);
 
 
 #define GREATE_MENU_BY_STRUCT(pTitle,pMenuItem,TimeOutMs)	APP_CreateNewMenuByStruct(pTitle,sizeof(pMenuItem)/sizeof(pMenuItem[0]),pMenuItem,TimeOutMs)

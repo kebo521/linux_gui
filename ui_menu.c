@@ -200,13 +200,13 @@ int APP_CreateNewMenuByList(char* pTitle,CMenuListPar* pMenulist,int TimeOutMs)
 //输出数据:GUI_Menu_msg
 //创作时间:  	20170317
 //---------------------------------------------------------------
-GUI_Menu_msg ReturnToPreviousMenu(XuiWindow *pWindow,u8 series,CMenuUITable *pEndMenu)  //RevocateMenuList
+GUI_Menu_msg ReturnToPreviousMenu(u8 series,CMenuUITable *pEndMenu)  //RevocateMenuList
 {
 	CMenuUITable* pOldeMenu;
 	while(pMenuUiTable!=NULL)
 	{
 		if(pMenuUiTable->pOutFunc)
-			pMenuUiTable->pOutFunc(pWindow,pMenuUiTable->pOutFuncTitle);
+			pMenuUiTable->pOutFunc(pMenuUiTable->pOutFuncTitle);
 		if(pEndMenu == pMenuUiTable)
 		{
 			pMenuUiTable=pMenuUiTable->pPrevious;
@@ -274,17 +274,16 @@ void ShowMenuItem(void *pMenu,int index,int line,char *pOutShow)
 //输出数据:菜单执行结果
 //注:改变了 pWindow 需要重新show,没改变不用
 //---------------------------------------------------------------
-int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*))
+int APP_ShowProsseMenu(FunFillColour fBackColour)
 {
 	CMenuUITable *pStartMenuAdd=pMenuUiTable;
 	u32 event,ret=EVENT_NONE;
-	if(pShowItem==NULL) pShowItem=&ShowMenuItem;
-	API_GUI_SetTheme(pWindow,NULL);
+	if(fBackColour==NULL) fBackColour=&API_FillMenuBack;
 	while(pMenuUiTable)
 	{
 		//----------显示菜单---------------------
-		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,GUI_MENU_LINE);
-		API_GUI_Menu(pMenuUiTable->pItem,pShowItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
+		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,fBackColour);
+		API_GUI_Menu(pMenuUiTable->pItem,ShowMenuItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
 		API_GUI_Show();
 	//	pMenuUiTable->ShowState=_GUI_MENU_PROCESS;
 		//----------处理菜单----------------------
@@ -300,20 +299,20 @@ int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*
 	//			pMenuUiTable->ShowState=_GUI_MENU_SHOW; //执行完显示菜单
 				if(pMenuUiTable->pUnifiedFunc)
 				{//-----统一菜单处理----------
-					ret=(*pMenuUiTable->pUnifiedFunc)(pWindow,pMenuUiTable->pItem[index].pText,index);
+					ret=(*pMenuUiTable->pUnifiedFunc)(pMenuUiTable->pItem[index].pText,index);
 					if((ret&EVENT_MASK) == EVENT_QUIT)
 					{
-						if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,ret&EVENT_INDEX,pStartMenuAdd))
+						if(_GUI_MENU_EXT == ReturnToPreviousMenu(ret&EVENT_INDEX,pStartMenuAdd))
 							break;
 					}
 					continue;
 				}
 				if(pMenuUiTable->pItem[index].pFunMenu)
 				{//-----独立菜单处理------
-					ret=(*pMenuUiTable->pItem[index].pFunMenu)(pWindow,pMenuUiTable->pItem[index].pText);
+					ret=(*pMenuUiTable->pItem[index].pFunMenu)(pMenuUiTable->pItem[index].pText);
 					if((ret&EVENT_MASK) == EVENT_QUIT)
 					{
-						if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,ret&EVENT_INDEX,pStartMenuAdd))
+						if(_GUI_MENU_EXT == ReturnToPreviousMenu(ret&EVENT_INDEX,pStartMenuAdd))
 							break;
 					}
 				}
@@ -321,14 +320,14 @@ int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*
 		}
 		else if(event==EVENT_CANCEL)
 		{
-			if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,1,pStartMenuAdd))
+			if(_GUI_MENU_EXT == ReturnToPreviousMenu(1,pStartMenuAdd))
 				break;
 	//		else
 	//			pMenuUiTable->ShowState=_GUI_MENU_SHOW;
 		}
 		else if(event==EVENT_TIMEOUT)
 		{
-			if(_GUI_MENU_EXT == ReturnToPreviousMenu(pWindow,1,pStartMenuAdd))
+			if(_GUI_MENU_EXT == ReturnToPreviousMenu(1,pStartMenuAdd))
 				break;
 	//		else
 	//			pMenuUiTable->ShowState=_GUI_MENU_SHOW;
@@ -339,12 +338,12 @@ int APP_ShowProsseMenu(XuiWindow *pWindow,void (*pShowItem)(void *,int,int,char*
 				continue;
 	//		pMenuUiTable->ShowState=_GUI_MENU_SHOW; //执行完显示菜单
 			if(pMenuUiTable->pKeyFuncTitle)
-				ret=pMenuUiTable->pKeyFunc(pWindow,pMenuUiTable->pKeyFuncTitle);
+				ret=pMenuUiTable->pKeyFunc(pMenuUiTable->pKeyFuncTitle);
 			else
-				ret=pMenuUiTable->pKeyFunc(pWindow,pMenuUiTable->pTitle);
+				ret=pMenuUiTable->pKeyFunc(pMenuUiTable->pTitle);
 			if(EVENT_QUIT&ret)
 			{//-----退出所有菜单----------
-				ReturnToPreviousMenu(pWindow,ret&EVENT_INDEX,pStartMenuAdd);
+				ReturnToPreviousMenu(ret&EVENT_INDEX,pStartMenuAdd);
 				break;
 			}
 		}

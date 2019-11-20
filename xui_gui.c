@@ -17,9 +17,20 @@
 
 //#include "QR_Encode.h"
 
+typedef struct {
+	XuiWindow *pWindow;
+	u16		hfont,hn,hmc;			//字体高度，内容数，菜单项高度
+	u16		width,htitle,hcont;		//菜单宽度，标题高度，内容高度
+	A_RGB	titleFclr,contFclr;	//标题背景色，标题字体色
+//	A_RGB		titleBclr,contBclr;	//内容背景色，内容字体色
+	//A_RGB		cont1clr,cont2clr; 	 //选项背景色，选项字体色
+	FunFillColour pFillColour;
+	XuiWindow *pOldWindow;
+}GUI_THEME_MSG;
+
 static GUI_THEME_MSG tGuiThemeMsg={0};
 
-void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme)
+void API_GUI_Init(XuiWindow *pWindow,void *pTheme)
 {
 	tGuiThemeMsg.hfont = FONT_SIZE;
 	tGuiThemeMsg.hn = 8+1;
@@ -38,6 +49,13 @@ void API_GUI_SetTheme(XuiWindow *pWindow,GUI_THEME_MSG *pTheme)
 	tGuiThemeMsg.pWindow = pWindow;
 	//TRACE("Theme[%d][%d][%d][%d][%d]\r\n",tGuiThemeMsg.hfont,tGuiThemeMsg.hn,tGuiThemeMsg.hmc,tGuiThemeMsg.htitle,tGuiThemeMsg.hcont);
 }
+
+
+XuiWindow *API_GUI_GetCurrWindow(void)
+{
+	return tGuiThemeMsg.pWindow;
+}
+
 
 void API_FillMenuBack(A_RGB* pBack,int w,int h)
 {
@@ -86,7 +104,7 @@ void API_FillShowBack(A_RGB* pBack,int w,int h)
 	}
 }
 //=================================================================================
-void API_Set_Background(FunFillColour pFillColour)	// 'M' = menu , 'C'=cont
+int API_Set_Background(FunFillColour pFillColour)	// 'M' = menu , 'C'=cont
 {
 	if(pFillColour)
 	{
@@ -101,18 +119,19 @@ void API_Set_Background(FunFillColour pFillColour)	// 'M' = menu , 'C'=cont
 		int max;
 		A_RGB *destin,*source;
 		source = tGuiThemeMsg.pWindow->wBack;
-		if(source == NULL) return;
+		if(source == NULL) return -1;
 		destin = tGuiThemeMsg.pWindow->widget;
 		max= tGuiThemeMsg.pWindow->height * tGuiThemeMsg.pWindow->width;
 		while(max--)
 			*destin++ = *source++;
 	}
+	return 0;
 }
 
 //===============清除显示内容(指定区域)=================================================
-void API_GUI_ClearScreen(XuiWindow *pWindow,RECTL* pRect)
+void API_GUI_ClearScreen(RECTL* pRect)
 {
-	XuiClearArea(pWindow,pRect->left,pRect->top,pRect->width,pRect->height);
+	XuiClearArea(tGuiThemeMsg.pWindow,pRect->left,pRect->top,pRect->width,pRect->height);
 }
 
 
@@ -204,9 +223,9 @@ void Conv_TmoneyToDmoney(char* pOutdMoney,char* pIntMoney)
 //static const char* KeyMsgABC[10]={"*#:/?%@-+=","&$!,;'`^~\"_|","ABC","DEF","GHI","JKL","MNO","PQRS","TUV","WXYZ"};
 
 
-void DisplayPaintEnd(XuiWindow *pWindow)
+void DisplayPaintEnd(void)
 {
-	UI_Push(pWindow,NULL);
+	UI_Push(tGuiThemeMsg.pWindow,NULL);
 }
 
 
@@ -268,21 +287,21 @@ void UI_DisplayBitMapEND(void)
 
 
 //================================画框=======================================================
-void UI_ShowColorRect(XuiWindow *pWindow,RECTL *pRect,u16 Width,A_RGB Color)
+void API_GUI_ShowColorRect(RECTL *pRect,u16 Width,A_RGB Color)
 {
 	RECTL fTrg;
 	fTrg.left = pRect->left; fTrg.top = pRect->top;
 	fTrg.width = pRect->width;
 	fTrg.height= Width;
-	UI_FillRectSingLe(pWindow,&fTrg,Color);
+	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
 	fTrg.top = pRect->top+pRect->height-Width;
-	UI_FillRectSingLe(pWindow,&fTrg,Color);
+	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
 	fTrg.top = pRect->top+Width;
 	fTrg.width = Width;
 	fTrg.height= pRect->height-2*Width;
-	UI_FillRectSingLe(pWindow,&fTrg,Color);
+	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
 	fTrg.left = pRect->left+pRect->width-Width;
-	UI_FillRectSingLe(pWindow,&fTrg,Color);
+	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
 }
 
 
@@ -299,12 +318,15 @@ void API_GUI_Show(void)
 	
 
 //================================================================
-int  API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCancel,u32 tGuiType)
+int  API_GUI_CreateWindow(const char* pTitle,const char* pOk,const char* pCancel,FunFillColour fBackColour)
 {
-	if(tGuiType == GUI_MENU_LINE)
-		API_Set_Background(API_FillMenuBack);
-	else
-		API_Set_Background(API_FillShowBack);
+	int ret;
+	ret=API_Set_Background(fBackColour);
+	if(ret < 0)
+	{
+		TRACE("Set_Background [%d] ERR\r\n",ret);
+		return ret;
+	}
 	if(pTitle!=NULL)
 	{
 		//-------------------显示标题--------------------------------
@@ -337,9 +359,9 @@ int  API_GUI_Info(const IMAGE* pImg,u32 tTextType,const char* pTextBuf)
 	if(pTextBuf)
 	{
 		if(tCoordinate.width)
-			fontN=tCoordinate.width*2/FONT_SIZE;
+			fontN=tCoordinate.width*2/tGuiThemeMsg.hfont;
 		else
-			fontN=(UI_CONT_W*2/FONT_SIZE);
+			fontN=(tGuiThemeMsg.width*2/tGuiThemeMsg.hfont);
 		sLen=API_strlen(pTextBuf);
 		for(offset=0,line=0;line<10;line++)
 		{
@@ -360,37 +382,37 @@ int  API_GUI_Info(const IMAGE* pImg,u32 tTextType,const char* pTextBuf)
 			offset += i;
 		}
 		if(sLen > fontN)
-			tCoordinate.width=UI_CONT_W;
+			tCoordinate.width=tGuiThemeMsg.width;
 		else
-			tCoordinate.width=sLen*FONT_SIZE/2;
-		tCoordinate.height=line*FONT_SIZE;
+			tCoordinate.width=sLen*tGuiThemeMsg.hfont/2;
+		tCoordinate.height=line*tGuiThemeMsg.hfont;
 	}
 	
 	switch(tTextType&TEXT_ALIGN_MASK)
 	{
 		case TEXT_ALIGN_RIGHT: 	//右对齐tIdle.rThis
-			tCoordinate.left=UI_CONT_X+UI_CONT_W-tCoordinate.width;
+			tCoordinate.left=tGuiThemeMsg.width-tCoordinate.width;
 			break;
 		case TEXT_ALIGN_CENTER: 	//左右居中
-			tCoordinate.left=UI_CONT_X+(UI_CONT_W-tCoordinate.width)/2;
+			tCoordinate.left=(tGuiThemeMsg.width-tCoordinate.width)/2;
 			break;
 		default ://case 0: 	//左对齐
-			tCoordinate.left=UI_CONT_X;
+			tCoordinate.left=0;
 			break;
 	}
 	switch(tTextType&TEXT_VALIGN_MASK)
 	{
 		case TEXT_VALIGN_BOTTOM: 	//下对齐
-			tCoordinate.top=UI_CONT_Y+UI_CONT_H-tCoordinate.height;
+			tCoordinate.top=tGuiThemeMsg.htitle + tGuiThemeMsg.hcont-tCoordinate.height;
 			break;
 		case TEXT_VALIGN_CENTER: 	//上下居中
-			tCoordinate.top=UI_CONT_Y+(UI_CONT_H-tCoordinate.height)/2;
+			tCoordinate.top=tGuiThemeMsg.htitle +(tGuiThemeMsg.hcont-tCoordinate.height)/2;
 			break;
 		case 0: 	//指定行号(0~7)
-			tCoordinate.top=UI_CONT_Y + ((tTextType&TEXT_LINE_NUM_MASK)/0x10000)*(UI_CONT_H/8) + ((UI_CONT_H/8)-FONT_SIZE)/2;
+			tCoordinate.top=tGuiThemeMsg.htitle +((tTextType&TEXT_LINE_NUM_MASK)/0x10000)*tGuiThemeMsg.hmc + (tGuiThemeMsg.hmc-tGuiThemeMsg.hfont)/2;
 			break;
 		default: 		//上对齐
-			tCoordinate.top=UI_CONT_Y;
+			tCoordinate.top=tGuiThemeMsg.htitle;
 			break;
 	}
 	if(tTextType&TEXT_EXSTYLE_BORDER)//加框
@@ -402,7 +424,7 @@ int  API_GUI_Info(const IMAGE* pImg,u32 tTextType,const char* pTextBuf)
 			rect.top=tCoordinate.top-1;
 			rect.width=tCoordinate.width+2;
 			rect.height=tCoordinate.height+2;
-			UI_ShowColorRect(tGuiThemeMsg.pWindow,&rect,1,RGB_CURR(30,30,30));
+			API_GUI_ShowColorRect(&rect,1,RGB_CURR(30,30,30));
 		}
 	}
 	else
@@ -1190,7 +1212,7 @@ void APP_ShowChangeInfo(char *pOriginal,int Originalsize,const char* format,...)
 		
 	}
 	*/
-	if(offset) API_GUI_ClearScreen(tGuiThemeMsg.pWindow,&tRect);	//清空区域
+	if(offset) API_GUI_ClearScreen(&tRect);	//清空区域
 	ApiFont.SetFontColor(tGuiThemeMsg.contFclr,RGB565_PARENT);
 	ApiFont.DrawRectString(tGuiThemeMsg.pWindow,&tRect,pOriginal);
 	API_GUI_Show();	
@@ -1273,25 +1295,22 @@ int APP_WaitUiEvent(int tTimeOutMS)
 }
 
 
-void APP_ShowSta(XuiWindow *pWindow,char *pTitle,char *pMsg)
+void APP_ShowSta(char *pTitle,char *pMsg)
 {
-	API_GUI_SetTheme(pWindow,NULL);
-	API_GUI_CreateWindow(pTitle,NULL,NULL,GUI_SHOW_MSG);
+	API_GUI_CreateWindow(pTitle,NULL,NULL,API_FillShowBack);
 	API_GUI_Info(NULL,TEXT_ALIGN_CENTER|TEXT_VALIGN_CENTER,pMsg);
 	API_GUI_Show();
 }
 
-int APP_ShowMsg(XuiWindow *pWindow,char *pTitle,char *pMsg,int timeOutMs)
+int APP_ShowMsg(char *pTitle,char *pMsg,int timeOutMs)
 {
-	API_GUI_SetTheme(pWindow,NULL);
-	APP_ShowSta(pWindow,pTitle,pMsg);
+	APP_ShowSta(pTitle,pMsg);
 	return APP_WaitUiEvent(timeOutMs);
 }
 
-int APP_ShowInfo(XuiWindow *pWindow,char *pTitle,char *pInfo,int timeOutMs)
+int APP_ShowInfo(char *pTitle,char *pInfo,int timeOutMs)
 {
-	API_GUI_SetTheme(pWindow,NULL);
-	API_GUI_CreateWindow(pTitle,TOK,TCANCEL,GUI_SHOW_MSG);
+	API_GUI_CreateWindow(pTitle,TOK,TCANCEL,API_FillShowBack);
 //	API_GUI_OprInfo(pInfo,NULL);
 	API_GUI_Show();
 	return APP_WaitUiEvent(timeOutMs);

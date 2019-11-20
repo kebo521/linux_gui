@@ -4,7 +4,7 @@
 
 
 
-extern int APP_FactoryMeun(XuiWindow *pWindow,char* title);
+extern int APP_FactoryMeun(char* title);
 
 
 

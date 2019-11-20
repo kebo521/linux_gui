@@ -35,29 +35,45 @@
 
 
 
-int APP_QrCodeTest(XuiWindow *pWindow,char *pTitle)
+int APP_QrCodeTest(char *pTitle)
 {
 	RECTL rpin;
 	char *pshowfont="12345678abcd";
-	APP_ShowSta(pWindow,"二维码测试",NULL);
+	APP_ShowSta("二维码测试",NULL);
 	rpin.top=24+40;
 	rpin.left=10;
 	rpin.width=SCREEN_WIDTH-rpin.left;
 	rpin.height=SCREEN_HEIGT-rpin.top;
-	ApiUI.ShowQrCode(pWindow,&rpin,pshowfont,RGB_CURR(0,0,0xff));
-	ApiUI.Push(pWindow,NULL);
+	ApiUI.ShowQrCode(API_GUI_GetCurrWindow(),&rpin,pshowfont,RGB_CURR(0,0,0xff));
+	ApiUI.Push(API_GUI_GetCurrWindow(),NULL);
 	return APP_WaitUiEvent(5000);
 }
 
 
 
-int APP_AutoTest(XuiWindow *pWindow,char *pTitle)
+int APP_AutoTest(char *pTitle)
 {
-	APP_ShowMsg(pWindow,pTitle,"测试项1234",2000);
+	APP_ShowMsg(pTitle,"测试项1234",2000);
 	return 0;
 }
 
-int APP_HardTestMenu(XuiWindow *pWindow,char* title)
+int APP_QianTest(char *pTitle)
+{
+	XuiWindow *babyWindow,*pCurrWindow;
+	pCurrWindow = API_GUI_GetCurrWindow();
+	babyWindow = XuiCreateCanvas(pCurrWindow,24,60,192,296-130);
+	API_GUI_Init(babyWindow,NULL);
+	
+	APP_ShowMsg(pTitle,"小测试窗口",2000);
+
+	
+	XuiDestroyWindow(babyWindow);
+	API_GUI_Init(pCurrWindow,NULL);
+	return 0;
+}
+
+
+int APP_HardTestMenu(char* title)
 {
 	CMenuItemStru MenuStruPar[]=
 	{
@@ -76,7 +92,7 @@ int APP_HardTestMenu(XuiWindow *pWindow,char* title)
 }
 
 
-int APP_FactoryMeun(XuiWindow *pWindow,char* title)
+int APP_FactoryMeun(char* title)
 {
 	CMenuItemStru MenuStruPar[]=
 	{
@@ -84,7 +100,7 @@ int APP_FactoryMeun(XuiWindow *pWindow,char* title)
 		{"自动测试",			APP_AutoTest},
 		{"测试结果",			APP_AutoTest},
 		{"老化测试",			APP_AutoTest},
-	//	{"拨打电话测试",		APP_AutoTest}
+		{"嵌套菜单",			APP_QianTest},
 		{"二维码测试",			APP_QrCodeTest}
 
 		
