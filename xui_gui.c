@@ -30,7 +30,7 @@ typedef struct {
 
 static GUI_THEME_MSG tGuiThemeMsg={0};
 
-void API_GUI_Init(XuiWindow *pWindow,void *pTheme)
+void API_GUI_LoadWindow(XuiWindow *pWindow)
 {
 	tGuiThemeMsg.hfont = FONT_SIZE;
 	tGuiThemeMsg.hn = 8+1;

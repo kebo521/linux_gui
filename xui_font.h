@@ -17,9 +17,6 @@
  *
  */
 
-#include "pixel.h"
-#include "bitmap.h"
-
 #ifndef XUI_FONT_H
 #define XUI_FONT_H
 

@@ -80,19 +80,31 @@ int APP_NineDirecTest(char *pTitle)
 }
 
 
+int APP_QianMeun(char* title)
+{
+	CMenuItemStru MenuStruPar[]=
+	{
+		{"九方位显示 ",			APP_NineDirecTest},
+		{"二维码测试",			APP_QrCodeTest}
+	};
+	return APP_CreateNewMenuByStruct(title,sizeof(MenuStruPar)/sizeof(CMenuItemStru),MenuStruPar,30*1000);
+}
+
+
+
 int APP_QianTest(char *pTitle)
 {
 	XuiWindow *babyWindow,*pCurrWindow;
 	pCurrWindow = API_GUI_GetCurrWindow();
 	babyWindow = XuiCreateCanvas(pCurrWindow,24,60,192,296-130);
-	API_GUI_Init(babyWindow,NULL);
+	API_GUI_LoadWindow(babyWindow);
 
-	APP_FactoryMeun(pTitle);
-	APP_ShowProsseMenu(NULL);
+	APP_QianMeun(pTitle);
+	APP_ShowProsseMenu();
 	
 	XuiDestroyWindow(babyWindow);
 	sleep(2);
-	API_GUI_Init(pCurrWindow,NULL);
+	API_GUI_LoadWindow(pCurrWindow);
 	return 0;
 }
 

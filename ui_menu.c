@@ -42,7 +42,9 @@ typedef struct _CMenuUITable
 	fMenuFun pOutFunc;		//退出功能
 	char	*pOutFuncTitle;		//退出功能标题
 	APP_IndexH pUnifiedFunc;	//统一处理菜单接口
-
+	FunFillColour fBackColour;
+	u8				ShowFont;	//0显示菜单文字，0xff 不显示菜单文字
+	u8				noUse[3];	
 	int				TimeOutMs;		//菜单显示时间
 	char  			*pTitle;		//菜单标题
 	CMenuItemStru	pItem[1];		//菜单内容,菜单功能
@@ -236,24 +238,30 @@ GUI_Menu_msg ReturnToPreviousMenu(u8 series,CMenuUITable *pEndMenu)  //RevocateM
 //输入数据:type 功能类型,pFunc功能执行函数，pFunTitle 功能标题(不支持栈空间)。
 //输出数据:无
 //---------------------------------------------------------------
-void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,fMenuFun pFunc,const char *pFunTitle)
+void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,void* pFunc,const char *pData)
 {
 	if(pMenuUiTable)
 	{
 		if(type==MENU_KEY_FUN)
 		{
-			pMenuUiTable->pKeyFunc	= pFunc;
-			pMenuUiTable->pKeyFuncTitle = (char*)pFunTitle;
+			pMenuUiTable->pKeyFunc	= (fMenuFun)pFunc;
+			pMenuUiTable->pKeyFuncTitle = (char*)pData;
 		}
 		else if(type==MENU_OUT_FUN)
 		{
-			pMenuUiTable->pOutFunc	= pFunc;
-			pMenuUiTable->pOutFuncTitle = (char*)pFunTitle;
+			pMenuUiTable->pOutFunc	= (fMenuFun)pFunc;
+			pMenuUiTable->pOutFuncTitle = (char*)pData;
 		}
 		else if(type==MENU_SHOW_AFT)
 		{
-			pMenuUiTable->pAfterText = (char*)pFunTitle;
+			pMenuUiTable->pAfterText = (char*)pData;
 		}
+		else if(type==MENU_BACK_MAP)
+		{
+			pMenuUiTable->fBackColour	= (FunFillColour)pFunc;
+			pMenuUiTable->ShowFont	= *pData;
+		}
+		
 	}
 }
 
@@ -274,17 +282,25 @@ void ShowMenuItem(void *pMenu,int index,int line,char *pOutShow)
 //输出数据:菜单执行结果
 //注:改变了 pWindow 需要重新show,没改变不用
 //---------------------------------------------------------------
-int APP_ShowProsseMenu(FunFillColour fBackColour)
+int APP_ShowProsseMenu(void)
 {
 	CMenuUITable *pStartMenuAdd=pMenuUiTable;
 	u32 event,ret=EVENT_NONE;
-	if(fBackColour==NULL) fBackColour=&API_FillMenuBack;
 	while(pMenuUiTable)
 	{
+		if(pMenuUiTable->ShowFont == 0xff)
+		{//----不显示字符--------
+			API_GUI_CreateWindow(NULL,TOK,TCANCEL,pMenuUiTable->fBackColour);
+			API_GUI_Show();
+		}
+		else
+		{
+			if(pMenuUiTable->fBackColour==NULL) pMenuUiTable->fBackColour=&API_FillMenuBack;
+			API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,pMenuUiTable->fBackColour);
+			API_GUI_Menu(pMenuUiTable->pItem,ShowMenuItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
+			API_GUI_Show();
+		}
 		//----------显示菜单---------------------
-		API_GUI_CreateWindow(pMenuUiTable->pTitle,TOK,TCANCEL,fBackColour);
-		API_GUI_Menu(pMenuUiTable->pItem,ShowMenuItem,pMenuUiTable->TeamTatla,pMenuUiTable->TeamCurr,pMenuUiTable->ShowHead,pMenuUiTable->pAfterText,pMenuUiTable->pKeyFunc);
-		API_GUI_Show();
 	//	pMenuUiTable->ShowState=_GUI_MENU_PROCESS;
 		//----------处理菜单----------------------
 		event=API_WaitEvent(pMenuUiTable->TimeOutMs,EVENT_UI,EVENT_NONE);	

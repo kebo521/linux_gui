@@ -245,7 +245,7 @@ typedef enum
 
 
 
-extern void API_GUI_Init(XuiWindow *pWindow,void *pTheme);
+extern void API_GUI_LoadWindow(XuiWindow *pWindow);
 extern XuiWindow *API_GUI_GetCurrWindow(void);
 
 extern void API_FillMenuBack(A_RGB* pBack,int w,int h);

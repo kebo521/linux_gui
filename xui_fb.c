@@ -112,7 +112,7 @@ void close_screen(void)
 	if(fb_screen.openFlagOK)
 	{
 		/* Unmap the framebuffer*/
-		munmap(fb_screen.buffer, fb_screen.memlen);
+		munmap(fb_screen.pARGB, fb_screen.memlen);
 		/* Close framebuffer device */
 		close(fb_screen.dev_fd);
 		memset(&fb_screen,0x00,sizeof(fb_screen));
@@ -152,10 +152,10 @@ int open_screen(const char* filename,XuiWindow *pHardWindow) //XuiWindow *pHardW
 		return -3;
 	}
 	fb_screen.memlen = fb_screen.height * fix.line_length;
-	fb_screen.buffer = (unsigned char *) mmap(NULL, fb_screen.memlen, PROT_READ|PROT_WRITE, MAP_FILE|MAP_SHARED, fb_screen.dev_fd, 0);
-	if (fb_screen.buffer == MAP_FAILED)
+	fb_screen.pARGB = (A_RGB *) mmap(NULL, fb_screen.memlen, PROT_READ|PROT_WRITE, MAP_FILE|MAP_SHARED, fb_screen.dev_fd, 0);
+	if (fb_screen.pARGB == MAP_FAILED)
 	{
-		printf("rw_sd_inand.c: Can't mmap frame buffer ++\r\n");
+		printf("rw_sd_inand.c: Can't mmap frame pARGB ++\r\n");
 		close(fb_screen.dev_fd);
 		return -4;
 	}
@@ -168,61 +168,43 @@ int open_screen(const char* filename,XuiWindow *pHardWindow) //XuiWindow *pHardW
 		memset(pHardWindow,0x00,sizeof(XuiWindow));
 		pHardWindow->width= fb_screen.width;
 		pHardWindow->height= fb_screen.height;
-		pHardWindow->widget = (A_RGB*)fb_screen.buffer;
+		pHardWindow->widget = fb_screen.pARGB;
 	}
 	return 1;
 }
 
 
 
-#define xui_fb_get_addr(x,y) 	(fb_screen.buffer + y * fb_screen.line_length + x * fb_screen.bytes_per_pixel)
+#define xui_fb_get_addr(x,y) 	(fb_screen.pARGB + y * fb_screen.width+ x)
 
-/*
-static int xui_fb_get(screen_buffer* fb, int x, int y, rgba_t* rgba) {
-  char* addr;
-  addr.pixel = xui_fb_get_addr(fb, x, y);
-  if (fb->bpp == 2) {
-    pixel_rgb565_t* p = (pixel_rgb565_t*)addr;
-    rgba_t pixel = pixel_rgb565_to_rgba((*p));
-    *rgba = pixel;
-  } else if (fb->bpp == 4) {
-    pixel_bgra8888_t* p = (pixel_bgra8888_t*)addr;
-    rgba_t pixel = pixel_bgra8888_to_rgba((*p));
-    *rgba = pixel;
-  }
-  return RET_OK;
-}
-*/
-static int xui_fb_set(int x, int y, const rgba_t* rgba) 
+
+static int xui_fb_set(int x, int y,A_RGB argb) 
 {
-	if (fb_screen.bytes_per_pixel == 2) {
-		pixel_rgb565_t* p = (pixel_rgb565_t*)xui_fb_get_addr(x, y);
-		pixel_rgb565_t pixel = pixel_rgb565_from_rgb(rgba->r, rgba->g, rgba->b);
-		*p = pixel;
-	} 
-	else if (fb_screen.bytes_per_pixel == 4) {
-		pixel_bgra8888_t* p = (pixel_bgra8888_t*)xui_fb_get_addr(x, y);
-		if(rgba->a == 0xff)
-		{
-			pixel_bgra8888_t pixel = pixel_bgra8888_from_rgb(rgba->r, rgba->g, rgba->b);
-			 *p = pixel;
-		}
-		else if(rgba->a == 0)
-		{
-			
-		}
-		else
-		{
-			p->r=(rgba->r*rgba->a + p->r*(256-rgba->a))/256;
-			p->g=(rgba->g*rgba->a + p->g*(256-rgba->a))/256;
-			p->b=(rgba->b*rgba->a + p->b*(256-rgba->a))/256;
-		}
+	Pixel_Color rgba;
+	rgba.uPix = argb;
+	Pixel_Color* p = (Pixel_Color*)xui_fb_get_addr(x, y);
+	if(rgba.tPix.a == 0xff)
+	{
+		p->uPix = rgba.uPix;
+	}
+	else if(rgba.tPix.a == 0)
+	{
+		
+	}
+	else
+	{
+		u8 a,da;
+		a = rgba.tPix.a;
+		da = 256-a;
+		p->tPix.r=(rgba.tPix.r*a + p->tPix.r*da)/256;
+		p->tPix.g=(rgba.tPix.g*a + p->tPix.g*da)/256;
+		p->tPix.b=(rgba.tPix.b*a + p->tPix.b*da)/256;
 	}
 	return RET_OK;
 }
 
 //=============================画线，起到到终点，支持斜线====================================
-int xui_fb_line(int xs, int ys, int xe, int ye, const rgba_t* rgba) 
+int xui_fb_line(int xs, int ys, int xe, int ye,A_RGB argb) 
 {
 	int w,h,max;
 	float xm,ym,wm,hm;
@@ -259,7 +241,7 @@ int xui_fb_line(int xs, int ys, int xe, int ye, const rgba_t* rgba)
 	while(max--) 
 	{
 		if(ys<fb_screen.height && xs<fb_screen.width)
-			xui_fb_set(xs,ys,rgba);
+			xui_fb_set(xs,ys,argb);
 		xm += wm;
 		ym += hm;
 		xs = xm;
@@ -282,7 +264,7 @@ typedef union {
 
 
 
-int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* rgba) 
+int xui_fb_circle(signed short x, signed short y, signed short r,A_RGB argb) 
 {
 	double sci,scs;
 	int jdm;
@@ -333,12 +315,12 @@ int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* 
 		{
 			xr=x - curr.pix.x;
 			if( x < xMax)
-				xui_fb_set(xr,yr,rgba);
+				xui_fb_set(xr,yr,argb);
 			if(curr.pix.x)
 			{
 				xr= x + curr.pix.x;
 				if( x < xMax)
-					xui_fb_set(xr,yr,rgba);
+					xui_fb_set(xr,yr,argb);
 			}
 		}
 		yr= y + curr.pix.y;
@@ -346,12 +328,12 @@ int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* 
 		{
 		//	xr= x + curr.pix.x;
 			if( x < xMax)
-				xui_fb_set(xr,yr,rgba);
+				xui_fb_set(xr,yr,argb);
 			if(curr.pix.x)
 			{
 				xr=x - curr.pix.x;
 				if( x < xMax)
-					xui_fb_set(xr,yr,rgba);
+					xui_fb_set(xr,yr,argb);
 			}
 		}
 		xr= x + curr.pix.y;
@@ -359,12 +341,12 @@ int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* 
 		{
 			yr= y - curr.pix.x;
 			if( yr < yMax)
-				xui_fb_set(xr,yr,rgba);
+				xui_fb_set(xr,yr,argb);
 			if(curr.pix.x)
 			{
 				yr= y + curr.pix.x;
 				if( yr < yMax)
-					xui_fb_set(xr,yr,rgba);
+					xui_fb_set(xr,yr,argb);
 			}
 		}
 		xr=x - curr.pix.y;
@@ -372,12 +354,12 @@ int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* 
 		{
 		//	yr=y + curr.pix.x;
 			if( yr < yMax)
-				xui_fb_set(xr,yr,rgba);
+				xui_fb_set(xr,yr,argb);
 			if(curr.pix.x)
 			{
 				yr=y - curr.pix.x;
 				if( yr < yMax)
-					xui_fb_set(xr,yr,rgba);
+					xui_fb_set(xr,yr,argb);
 			}
 		}	
 	#endif
@@ -388,7 +370,7 @@ int xui_fb_circle(signed short x, signed short y, signed short r, const rgba_t* 
 }
 
 
-int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed short ar, const rgba_t* rgba) 
+int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed short ar, A_RGB argb) 
 {
 	double sci,scs;
 	int jdm;
@@ -420,11 +402,11 @@ int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed sho
 			{
 				if(curr.pix.x)
 				{
-					xui_fb_hline(xr,yr,curr.pix.x*2,rgba);
+					xui_fb_hline(xr,yr,curr.pix.x*2,argb);
 				}
 				else
 				{
-					xui_fb_set(xr,yr,rgba);
+					xui_fb_set(xr,yr,argb);
 				}
 			}
 			yr= y + curr.pix.y;
@@ -432,11 +414,11 @@ int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed sho
 			{
 				if(curr.pix.x)
 				{
-					xui_fb_hline(xr,yr,curr.pix.x*2,rgba);
+					xui_fb_hline(xr,yr,curr.pix.x*2,argb);
 				}
 				else
 				{
-					xui_fb_set(xr,yr,rgba);
+					xui_fb_set(xr,yr,argb);
 				}
 			}
 		}
@@ -446,14 +428,14 @@ int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed sho
 			yr=y - curr.pix.y;
 			if(yr>=0 && yr < yMax)
 			{
-				xui_fb_hline(xr,yr,curr.pix.x-xtwo,rgba);
-				xui_fb_hline(x+xtwo+1,yr,curr.pix.x-xtwo,rgba);
+				xui_fb_hline(xr,yr,curr.pix.x-xtwo,argb);
+				xui_fb_hline(x+xtwo+1,yr,curr.pix.x-xtwo,argb);
 			}
 			yr= y + curr.pix.y;
 			if(yr < yMax)
 			{
-				xui_fb_hline(xr,yr,curr.pix.x-xtwo,rgba);
-				xui_fb_hline(x+xtwo+1,yr,curr.pix.x-xtwo,rgba);
+				xui_fb_hline(xr,yr,curr.pix.x-xtwo,argb);
+				xui_fb_hline(x+xtwo+1,yr,curr.pix.x-xtwo,argb);
 			}
 		}
 		old.uXY = curr.uXY;
@@ -463,7 +445,7 @@ int xui_fb_fill_circle(signed short x, signed short y, signed short r,signed sho
 
 
 
-int xui_fb_vline(int x, int y, int h, const rgba_t* rgba) 
+int xui_fb_vline(int x, int y, int h, A_RGB argb) 
 {
 	int i;
 	if(x >= fb_screen.width) 
@@ -471,32 +453,31 @@ int xui_fb_vline(int x, int y, int h, const rgba_t* rgba)
 	for (i = 0; i < h; i++) 
 	{
 		if((y+i) >= fb_screen.height) break;
-		xui_fb_set(x, y + i, rgba);
+		xui_fb_set(x, y + i, argb);
 	}
 	return RET_OK;
 }
 
-int xui_fb_hline(int x, int y, int w, const rgba_t* rgba) 
+int xui_fb_hline(int x, int y, int w, A_RGB argb) 
 {
 	int i;
-	pixel_bgra8888_t *pbgra;
+	A_RGB *pbgra;
 	if(y >= fb_screen.height) 
 		return RET_BAD_PARAMS;
-	pbgra=&fb_screen.bgra8888buff[y*fb_screen.width + x];
+	pbgra=&fb_screen.pARGB[y*fb_screen.width + x];
 	for (i = 0; i < w; i++) 
 	{
 		if((x+i) >= fb_screen.width) break;
-		*(u32*)pbgra = *(u32*)rgba;
-		pbgra++;
+		*pbgra++ =argb;
 	//	xui_fb_set(fb, x + i, y, rgba);
 	}
 	return RET_OK;
 }
 
-int xui_fb_fill_rect(int x, int y, int w, int h,const rgba_t* rgba) 
+int xui_fb_fill_rect(int x, int y, int w, int h,A_RGB argb) 
 {
 	int i,j;
-	pixel_bgra8888_t *pbgra;
+	A_RGB *pbgra;
 	w += x;
 	h += y;
 
@@ -504,56 +485,55 @@ int xui_fb_fill_rect(int x, int y, int w, int h,const rgba_t* rgba)
 	if(h > fb_screen.height) h=fb_screen.height;
 	for (j = y; j < h; j++) 
 	{
-		pbgra=&fb_screen.bgra8888buff[j*fb_screen.width + x];
+		pbgra=&fb_screen.pARGB[j*fb_screen.width + x];
 		for(i=x; i<w; i++)
 		{
-			*(u32*)pbgra = *(u32*)rgba;
-			pbgra++;
+			*pbgra++ = argb;
 		}
 		//xui_fb_hline(fb, x, y + i, w, rgba);
 	}
 	return RET_OK;
 }
 
-int xui_fb_stroke_rect(int x, int y, int w, int h,const rgba_t* rgba) 
+int xui_fb_stroke_rect(int x, int y, int w, int h,A_RGB argb) 
 {
 	if(x >= fb_screen.width || y >= fb_screen.height) 
 		return RET_BAD_PARAMS;
-	xui_fb_hline(x, y, w, rgba);
-	xui_fb_hline(x, y + h - 1, w, rgba);
-	xui_fb_vline(x, y, h, rgba);
-	xui_fb_vline(x + w - 1, y, h, rgba);
+	xui_fb_hline(x, y, w, argb);
+	xui_fb_hline(x, y + h - 1, w, argb);
+	xui_fb_vline(x, y, h, argb);
+	xui_fb_vline(x + w - 1, y, h, argb);
 	return RET_OK;
 }
 
 
-int xui_fb_show_rect(int x, int y, int w, int h,rgba_t* rgba) 
+int xui_fb_show_rect(int x, int y, int w, int h,A_RGB* pArgb) 
 {
 	int i,j,imax,jmax;
-	pixel_bgra8888_t *pbgra;
-	rgba_t	*prgb;
+	Pixel_Color *pbgra;
+	Pixel_Color *prgb;
 	imax = x+w;
 	jmax = y+h;
 
 	if(imax > fb_screen.width) imax=fb_screen.width;
 	if(jmax > fb_screen.height) jmax=fb_screen.height;
+	prgb=(Pixel_Color *)pArgb;
 	for (j = y; j < jmax; j++) 
 	{
-		pbgra=&fb_screen.bgra8888buff[j*fb_screen.width + x];
-		prgb=rgba+(j-y)*w;
+		pbgra=(Pixel_Color *)(fb_screen.pARGB+(j*fb_screen.width + x));
 		for(i=x; i<imax; i++)
 		{
-			if(prgb->a == 0xff)
+			if(prgb->tPix.a == 0xff)
 			{
-				*(u32*)pbgra = *(u32*)prgb;
+				pbgra->uPix = prgb->uPix;
 			}
-			else if(prgb->a)
+			else if(prgb->tPix.a)
 			{
 				uint8_t a,ca;
-				a=prgb->a; ca=256-prgb->a;
-				pbgra->r=(prgb->r * a + pbgra->r * ca)/256;
-				pbgra->g=(prgb->g * a + pbgra->g * ca)/256;
-				pbgra->b=(prgb->b * a + pbgra->b * ca)/256;
+				a=prgb->tPix.a; ca=256-a;
+				pbgra->tPix.r=(prgb->tPix.r * a + pbgra->tPix.r * ca)/256;
+				pbgra->tPix.g=(prgb->tPix.g * a + pbgra->tPix.g * ca)/256;
+				pbgra->tPix.b=(prgb->tPix.b * a + pbgra->tPix.b * ca)/256;
 			}
 			pbgra++; prgb++;
 		}
@@ -561,13 +541,13 @@ int xui_fb_show_rect(int x, int y, int w, int h,rgba_t* rgba)
 	return RET_OK;
 }
 
-int xui_fb_rect_push(int x, int y, int w, int h,rgba_t* pInrgb) 
+int xui_fb_rect_push(int x, int y, int w, int h,A_RGB *pInrgb) 
 {
 	int i,j;
-	u32 *destin,*source;
-	source=(u32*)pInrgb;
+	A_RGB *destin,*source;
+	source=pInrgb;
 	#ifdef DISPLAY_HORIZONTAL_SCREEN
-	destin=(u32*)fb_screen.bgra8888buff;
+	destin=fb_screen.pARGB;
 	w += y;
 	h += x;
 	for(i=x; i<h; i++)
@@ -583,7 +563,7 @@ int xui_fb_rect_push(int x, int y, int w, int h,rgba_t* pInrgb)
 	h += y;
 	for (j = y; j < h; j++) 
 	{
-		destin=(u32*)&fb_screen.bgra8888buff[j*fb_screen.width + x];
+		destin=(u32*)&fb_screen.pARGB[j*fb_screen.width + x];
 		for(i=x; i<w; i++)
 		{
 			*destin++ = *source++;

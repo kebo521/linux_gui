@@ -4,15 +4,29 @@
 #define _UI_DISPLAY_
 
 //==========================================================
-typedef struct{
+typedef struct {/*
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t a;*/
+
   uint8_t b;
   uint8_t g;
   uint8_t r;
   uint8_t a;
-}gUIrgba;
-#define	RGB_CURR(r,g,b)		((r*0x10000)|(g*0x100)|b)	//(u32)(gUIrgba)(b,g,r,0xff))
-
+} rgba_t;
 typedef unsigned int  			A_RGB;		// <= RGB_CURR
+typedef union {
+	A_RGB uPix;
+	rgba_t tPix;
+}Pixel_Color;
+
+
+#define	RGB_CURR(r,g,b)		((r*0x10000)|(g*0x100)|b)	//(u32)(rgba_t)(b,g,r,0xff))
+
+
+
+
 
 typedef void (*FunFillColour)(A_RGB*,int,int);
 

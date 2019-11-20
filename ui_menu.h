@@ -27,11 +27,12 @@ typedef enum
 {
 	MENU_KEY_FUN,		//功能键执行功能
 	MENU_OUT_FUN,		//退出时键执行功能
-	MENU_SHOW_AFT,		//最后一行显示
+	MENU_SHOW_AFT,	//最后一行显示
+	MENU_BACK_MAP,	//背景图片功能
 }UI_MENU_ADD_TYPE;
-extern void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,fMenuFun pFunc,const char *pFunTitle);
+extern void APP_AddCurrentMenuOtherFun(UI_MENU_ADD_TYPE type,void* pFunc,const char *pData);
 
-extern int APP_ShowProsseMenu(FunFillColour fBackColour);
+extern int APP_ShowProsseMenu();
 
 
 #define GREATE_MENU_BY_STRUCT(pTitle,pMenuItem,TimeOutMs)	APP_CreateNewMenuByStruct(pTitle,sizeof(pMenuItem)/sizeof(pMenuItem[0]),pMenuItem,TimeOutMs)

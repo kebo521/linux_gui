@@ -332,10 +332,11 @@ int main(int argc, char* argv[]) {
 		
 		ApiEven.LoadThread(NULL);
 		ApiFont.InitFontLib("./bin/ks.res");
-		API_GUI_Init(pWindow,NULL);
+		
+		API_GUI_LoadWindow(pWindow);
 		
 		APP_FactoryMeun("Ó²¼þ²âÊÔ");
-		APP_ShowProsseMenu(NULL);
+		APP_ShowProsseMenu();
 
 		ApiFont.DeInitFontLib();
 		ApiEven.KillThread(NULL);

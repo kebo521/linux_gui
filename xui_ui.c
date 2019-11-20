@@ -207,12 +207,10 @@ XuiWindow *XuiRootCanvas(void)
 	#endif
 	gUiDataAll.tHardWindow.top = 10;
 	{
-		rgba_t rgba;
 		s16 staX,staY;
-		memset(&rgba,0x7f,sizeof(rgba));
 		staX=gUiDataAll.tHardWindow.left-10;
 		staY=0;
-		xui_fb_fill_rect(staX,staY,FB_WIDTH,FB_HEIGHT,&rgba);
+		xui_fb_fill_rect(staX,staY,FB_WIDTH,FB_HEIGHT,RGB_CURR(0x7f,0x7f,0x7f));
 	}
 	
 	if(gUiDataAll.tHardWindow.width < SCREEN_WIDTH || gUiDataAll.tHardWindow.height < SCREEN_HEIGT)
