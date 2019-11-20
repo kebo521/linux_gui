@@ -1320,6 +1320,21 @@ int APP_ShowInfo(char *pTitle,char *pInfo,int timeOutMs)
 	return APP_WaitUiEvent(timeOutMs);
 }
 
+
+int APP_ShowQrCode(char *pTitle,const char* pInfo,A_RGB Color)
+{
+	RECTL tRect;
+	API_GUI_CreateWindow(pTitle,NULL,NULL,API_FillShowBack);
+	tRect.left=0;
+	tRect.top= tGuiThemeMsg.htitle;
+	tRect.width = tGuiThemeMsg.width;
+	tRect.height= tGuiThemeMsg.hcont;
+	UI_ShowQrCode(tGuiThemeMsg.pWindow,&tRect,pInfo,Color);
+	API_GUI_Show();
+	return 0;
+}
+
+
 /*
 void APP_HitMsg(const char* pMsg,int tTimeOutMS)
 {

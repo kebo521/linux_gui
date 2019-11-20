@@ -341,6 +341,8 @@ extern int APP_ShowMsg(char *pTitle,char *pMsg,int timeOutMs);
 //===========◊Û…œΩ«œ‘ æƒ⁄»›=======
 extern int APP_ShowInfo(char *pTitle,char *pInfo,int timeOutMs);
 
+extern int APP_ShowQrCode(char *pTitle,const char* pInfo,A_RGB Color);
+
 //extern int APP_GUI_Edit(char *pTitle,const char* pFrontTextBuf,const char* pAfterTextBuf,char* pOutMsg,int MinLen,int MaxLen);
 
 

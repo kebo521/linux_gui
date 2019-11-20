@@ -37,15 +37,7 @@
 
 int APP_QrCodeTest(char *pTitle)
 {
-	RECTL rpin;
-	char *pshowfont="12345678abcd";
-	APP_ShowSta("¶þÎ¬Âë²âÊÔ",NULL);
-	rpin.top=24+40;
-	rpin.left=10;
-	rpin.width=SCREEN_WIDTH-rpin.left;
-	rpin.height=SCREEN_HEIGT-rpin.top;
-	ApiUI.ShowQrCode(API_GUI_GetCurrWindow(),&rpin,pshowfont,RGB_CURR(0,0,0xff));
-	ApiUI.Push(API_GUI_GetCurrWindow(),NULL);
+	APP_ShowQrCode(pTitle,"12345678abcduehsfiufwfowei3482y348239342",RGB_CURR(0,0,0xff));
 	return APP_WaitUiEvent(5000);
 }
 
