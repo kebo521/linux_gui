@@ -316,15 +316,16 @@ int main(int argc, char* argv[]) {
 	*/
 
 	
-	XuiWindow* pWindow;
+	XuiWindow* pWindow,*pStaWindow;
 		
 	XuiOpen(sizeof(pHardMsg)/sizeof(pHardMsg[0]) ,pHardMsg);
 	if((pWindow=XuiRootCanvas()) != NULL)
 	{
-		UI_DisplaySysEn(pWindow,0,0,TEXT_12,"0 yz131234&&*()_+~!@#$%^&*");
-		UI_DisplaySysEn(pWindow,0,TEXT_12,TEXT_16,"0 yz131234&&*()_+~!@#$%^&*");
-		UI_DisplaySysEn(pWindow,0,TEXT_12+TEXT_16,TEXT_24,"0 yz131234&&*()_+~!@#$%^&*");
-		UI_Push(pWindow,NULL);
+		pStaWindow=XuiStatusbarCanvas();
+		UI_DisplaySysEn(pStaWindow,0,0,TEXT_12,"0 yz131234&&*()");
+		UI_DisplaySysEn(pStaWindow,15*6,8,TEXT_16,"_+~!@#$%^&*");
+		//UI_DisplaySysEn(pStaWindow,0,TEXT_12+TEXT_16,TEXT_24,"0 yz131234&&*()_+~!@#$%^&*");
+		UI_Push(pStaWindow,NULL);
 		sleep(2);
 		
 		ApiEven.Init(0,0);

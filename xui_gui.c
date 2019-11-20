@@ -41,13 +41,13 @@ void API_GUI_Init(XuiWindow *pWindow,void *pTheme)
 	}
 	while(tGuiThemeMsg.hmc < tGuiThemeMsg.hfont);
 	
-	tGuiThemeMsg.hcont = tGuiThemeMsg.hmc*8;
+	tGuiThemeMsg.hcont = tGuiThemeMsg.hmc*tGuiThemeMsg.hn;
 	tGuiThemeMsg.htitle = pWindow->height - tGuiThemeMsg.hcont;
 	tGuiThemeMsg.width = pWindow->width;
 	tGuiThemeMsg.titleFclr = FONT_TITLE_COLOUR;
 	tGuiThemeMsg.contFclr = RGB565_TIEM_FONT;
 	tGuiThemeMsg.pWindow = pWindow;
-	//TRACE("Theme[%d][%d][%d][%d][%d]\r\n",tGuiThemeMsg.hfont,tGuiThemeMsg.hn,tGuiThemeMsg.hmc,tGuiThemeMsg.htitle,tGuiThemeMsg.hcont);
+//	TRACE("Theme[%d][%d][%d][%d][%d]\r\n",tGuiThemeMsg.hfont,tGuiThemeMsg.hn,tGuiThemeMsg.hmc,tGuiThemeMsg.htitle,tGuiThemeMsg.hcont);
 }
 
 
@@ -294,14 +294,18 @@ void API_GUI_ShowColorRect(RECTL *pRect,u16 Width,A_RGB Color)
 	fTrg.width = pRect->width;
 	fTrg.height= Width;
 	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
+//	UI_vline(tGuiThemeMsg.pWindow,(POINT *)&fTrg,pRect->width,Color);
 	fTrg.top = pRect->top+pRect->height-Width;
 	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
+//	UI_vline(tGuiThemeMsg.pWindow,(POINT *)&fTrg,pRect->width,Color);
 	fTrg.top = pRect->top+Width;
 	fTrg.width = Width;
 	fTrg.height= pRect->height-2*Width;
 	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
+//	UI_hline(tGuiThemeMsg.pWindow,(POINT *)&fTrg,fTrg.height,Color);
 	fTrg.left = pRect->left+pRect->width-Width;
 	UI_FillRectSingLe(tGuiThemeMsg.pWindow,&fTrg,Color);
+//	UI_hline(tGuiThemeMsg.pWindow,(POINT *)&fTrg,fTrg.height,Color);
 }
 
 

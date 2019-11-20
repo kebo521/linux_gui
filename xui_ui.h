@@ -70,6 +70,7 @@ extern void XuiShowWindow(XuiWindow *window,int show, int flag);
 
 extern void UI_SetBackground(XuiWindow *pWindow,FunFillColour pFillColour);	//(u32* pOut,int width,int height)
 extern void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,A_RGB Color);
+extern void UI_hline(XuiWindow *pWindow,POINT *pRect,int height,A_RGB Color);
 extern void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,A_RGB Color);
 
 
@@ -87,8 +88,6 @@ typedef struct _API_UI
 	void (*Push)(XuiWindow *,RECTL*);	//Cache area is pushed to video memory,(RECTL==NULL,Show full area)
 
 	void (*FillRectSingLe)(XuiWindow *,RECTL*,A_RGB);	//(xywh,RGB_CURR(r,g,b))
-	void (*SetRectBuff)(XuiWindow *,RECTL*,A_RGB*);	//(xywh,gUIrgba...)
-	void (*GetRectBuff)(XuiWindow *,RECTL*,A_RGB*); //(xywh,gUIrgba...)
 
 	void (*ShowQrCode)(XuiWindow *,RECTL* ,const char*,A_RGB);	//(xywh,"Text",RGB_CURR(r,g,b))
 	int (*ShowPictureFile)(XuiWindow *,RECTL *,const char *);

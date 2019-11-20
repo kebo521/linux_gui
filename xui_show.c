@@ -57,20 +57,45 @@ int APP_AutoTest(char *pTitle)
 	return 0;
 }
 
+
+int APP_NineDirecTest(char *pTitle)
+{
+	API_GUI_CreateWindow(pTitle,NULL,NULL,API_FillShowBack);
+	API_GUI_Info(NULL,TEXT_ALIGN_LEFT|TEXT_VALIGN_TOP|TEXT_EXSTYLE_UNDERLINE,"左上");
+	API_GUI_Info(NULL,TEXT_ALIGN_CENTER|TEXT_VALIGN_TOP,"中上");
+	API_GUI_Info(NULL,TEXT_ALIGN_RIGHT|TEXT_VALIGN_TOP,"右上");
+
+	API_GUI_Info(NULL,TEXT_ALIGN_LEFT|TEXT_VALIGN_CENTER,"左中");
+	API_GUI_Info(NULL,TEXT_ALIGN_CENTER|TEXT_VALIGN_CENTER|TEXT_EXSTYLE_BORDER,"中中");	//
+	API_GUI_Info(NULL,TEXT_ALIGN_RIGHT|TEXT_VALIGN_CENTER,"右中");
+
+	
+	API_GUI_Info(NULL,TEXT_ALIGN_LEFT|TEXT_VALIGN_BOTTOM,"左下");
+	API_GUI_Info(NULL,TEXT_ALIGN_CENTER|TEXT_VALIGN_BOTTOM,"中下");
+	API_GUI_Info(NULL,TEXT_ALIGN_RIGHT|TEXT_VALIGN_BOTTOM|TEXT_EXSTYLE_OVERLINE,"右下");
+	
+	API_GUI_Show();
+	APP_WaitUiEvent(5000);
+	return 0;
+}
+
+
 int APP_QianTest(char *pTitle)
 {
 	XuiWindow *babyWindow,*pCurrWindow;
 	pCurrWindow = API_GUI_GetCurrWindow();
 	babyWindow = XuiCreateCanvas(pCurrWindow,24,60,192,296-130);
 	API_GUI_Init(babyWindow,NULL);
-	
-	APP_ShowMsg(pTitle,"小测试窗口",2000);
 
+	APP_FactoryMeun(pTitle);
+	APP_ShowProsseMenu(NULL);
 	
 	XuiDestroyWindow(babyWindow);
+	sleep(2);
 	API_GUI_Init(pCurrWindow,NULL);
 	return 0;
 }
+
 
 
 int APP_HardTestMenu(char* title)
@@ -97,9 +122,10 @@ int APP_FactoryMeun(char* title)
 	CMenuItemStru MenuStruPar[]=
 	{
 		{"单项测试",			APP_HardTestMenu},
-		{"自动测试",			APP_AutoTest},
-		{"测试结果",			APP_AutoTest},
-		{"老化测试",			APP_AutoTest},
+		//{"自动测试",			APP_AutoTest},
+		//{"测试结果",			APP_AutoTest},
+		//{"老化测试",			APP_AutoTest},
+		{"九方位显示 ",			APP_NineDirecTest},
 		{"嵌套菜单",			APP_QianTest},
 		{"二维码测试",			APP_QrCodeTest}
 

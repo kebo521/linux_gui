@@ -381,39 +381,30 @@ void XuiDestroyWindow(XuiWindow *window)
 		FreeParentWindow(window->pParent);
 	}
 	if(window->pChild)
-	{
+	{//-----²ðÁ´±í------
 		pParent=window->pChild;
-		if(pParent->pParent == window)
+		if(pParent->pParent != window)
 		{
-			pParent->pParent=pParent->pParent->pNext;
-		}
-		else
-		{
-			pParent=window->pChild->pParent;
+			pParent = pParent->pParent;
 			while(pParent->pNext != window)
 				pParent= pParent->pNext;
-			pParent->pNext=pParent->pNext->pNext;
 		}
+		pParent->pNext=window->pNext;
 	}
 	
 	if(window->pChild)
 	{
 		RECTL tRect;
-		tRect.left = window->left;
-		tRect.top= 	window->top;
+		pParent=window->pChild;
+		tRect.left = window->left - pParent->left;
+		tRect.top= 	window->top - pParent->top;
 		tRect.width= window->width;
 		tRect.height= window->height;
-		pParent=window->pChild;
 		xui_fb_push(pParent,&tRect,pParent->widget);
 	}
 	else if(window->wBack)
-	{
-		RECTL tRect;
-		tRect.left = window->left;
-		tRect.top=	window->top;
-		tRect.width= window->width;
-		tRect.height= window->height;
-		xui_fb_push(window,&tRect,window->wBack);
+	{//-----¸ù»­²¼------
+		xui_fb_push(window,NULL,window->wBack);
 	}
 	free(window->wBack);
 	free(window);
@@ -509,47 +500,72 @@ void UI_SetBackground(XuiWindow *pWindow,FunFillColour pFillColour)	//(u32* pOut
 
 void UI_vline(XuiWindow *pWindow,POINT *pRect,int width,A_RGB Color)
 {
-	u16 i,sx,w;
-	A_RGB *destin;
-	if(pRect->top >= pWindow->height) return;
+	u16 sX,eX;
+	A_RGB *destinE,*destinS;
+	sX = pRect->left;
+	if(pRect->top>=pWindow->height || sX >= pWindow->width)
+		return;
+
+	eX = sX+width;
+	if(eX > pWindow->width) eX=pWindow->width;
 	
-	sx = pRect->left;
-	if(sx >= pWindow->width) return;
-	w = sx+width;
-	if(w > pWindow->width) w=pWindow->width;
-	
-	destin=&pWindow->widget[pRect->top*pWindow->width + pRect->left];
-	for(i=sx; i<w; i++)
+	destinS=&pWindow->widget[pRect->top*pWindow->width + sX];
+	destinE=destinS+(eX-sX);
+	while(destinS < destinE)
 	{
-		*destin++ = Color;
+		*destinS++ = Color;
+	}
+}
+
+void UI_hline(XuiWindow *pWindow,POINT *pRect,int height,A_RGB Color)
+{
+	u16 sH,eH,width;
+	A_RGB *destinE,*destinS;
+	sH = pRect->top;
+	width = pWindow->width;
+	if(pRect->left >= width || sH>=pWindow->height)
+		return;
+	eH = sH + height;
+	if(eH > pWindow->height) eH=pWindow->height;
+	
+	destinS=&pWindow->widget[sH*width + pRect->left];
+	destinE=destinS + (eH-sH)*width;
+	while(destinS < destinE)
+	{
+		*destinS = Color;
+		destinS += width;
 	}
 }
 
 void UI_FillRectSingLe(XuiWindow *pWindow,RECTL *pRect,A_RGB Color)
 {
-	u16 i,j,sx,sy,w,h;
-	u16 mWidth;
+	u16 sX,sY,eX,eY,i,mWidth;
 	A_RGB* pWidget;
 	A_RGB *destin;
-	sx = pRect->left;
-	sy = pRect->top;
-	h = sy+pRect->height;
+	sX = pRect->left;
+	sY = pRect->top;
+	if(sY >= pWindow->height || sX >= pWindow->width)
+		return;
 	mWidth	= pWindow->width;
-	w = sx+mWidth;
-	if(w > mWidth) w=mWidth;
-	if(h > pWindow->height) h=pWindow->height;
+	eX = sX+pRect->width;
+	if(eX > mWidth) eX=mWidth;
+
+	eY = sY+pRect->height;
+	if(eY > pWindow->height) 
+		eY=pWindow->height;
 	pWidget = pWindow->widget;
-	
-	for (j = sy; j < h; j++) 
+	while(sY < eY)
 	{
-		destin=&pWidget[j*mWidth + sx];
-		for(i=sx; i<w; i++)
+		destin=pWidget+(sY*mWidth + sX);
+		for(i=sX; i<eX; i++)
 		{
 			*destin++ = Color;
 		}
+		sY++;
 	}
 }
 
+/*
 void UI_SetRectBuff(XuiWindow *pWindow,RECTL *pRect,A_RGB *pRGB)
 {
 	u16 i,j,sx,sy,w,h;
@@ -595,7 +611,7 @@ void UI_GetRectBuff(XuiWindow *pWindow,RECTL *pRect,A_RGB *pRGB)
 		}
 	}
 }
-
+*/
 
 //static u8 SPF_runLock=FALSE;
 int UI_ShowPictureFile(XuiWindow *pWindow,RECTL *prclTrg,const char *pfilePath)
@@ -738,8 +754,6 @@ const API_UI_Def ApiUI={
 
 	UI_Push,
 	UI_FillRectSingLe,
-	UI_SetRectBuff,
-	UI_GetRectBuff,
 	
 	UI_ShowQrCode,
 	UI_ShowPictureFile,

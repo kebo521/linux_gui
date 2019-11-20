@@ -53,6 +53,10 @@ void UI_DisplaySysEn(XuiWindow *pWindow,int x,int y,int type,char*pMsgEn)
 	u16 width,height;
 	A_RGB* pWidget;
 
+	pWidget	= pWindow->widget;
+	width	= pWindow->width;
+	height	= pWindow->height;
+
 	#ifdef SYS_FUNT_12EN
 	if(type == TEXT_12)
 	{
@@ -79,20 +83,19 @@ void UI_DisplaySysEn(XuiWindow *pWindow,int x,int y,int type,char*pMsgEn)
 	#endif
 			return;
 	//---------------------------------------------------------------
-	pWidget	= pWindow->widget;
-	width	= pWindow->width;
-	height	= pWindow->height;
+	
 	while((jn=(u8)*pMsgEn++) != '\0')
 	{
 		if(jn >= 0x20)
 		{
-			if((y+cH) >= height) break;
-			
 			if((x+cW) >= width) 
 			{//--Automatic line feed display---
 				x = 0;
 				y += cH;
 			}
+			if(y >= height) return ;
+			if(cH > (height-y)) cH=(height-y);
+			
 			#ifdef SYS_FUNT_24EN
 			if(cW > 8) {
 				for(i = 0; i < cH; i++) {	 
