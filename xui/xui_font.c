@@ -41,7 +41,7 @@
 #define SYS_FUNT_16EN
 //#define SYS_FUNT_24EN
 
-#include "fontEn_6x12.h"
+#include "fontBitEn.h"
 
 void UI_DisplaySysEn(XuiWindow *pWindow,int x,int y,int type,char*pMsgEn) 
 {

@@ -22,8 +22,6 @@ typedef struct {
 	u16		hfont,hn,hmc;			//字体高度，内容数，菜单项高度
 	u16		width,htitle,hcont;		//菜单宽度，标题高度，内容高度
 	A_RGB	titleFclr,contFclr;	//标题背景色，标题字体色
-//	A_RGB		titleBclr,contBclr;	//内容背景色，内容字体色
-	//A_RGB		cont1clr,cont2clr; 	 //选项背景色，选项字体色
 	FunFillColour pFillColour;
 	XuiWindow *pOldWindow;
 }GUI_THEME_MSG;
